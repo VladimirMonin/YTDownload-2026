@@ -16,7 +16,9 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-_MAX_BYTES = 128 * 1024  # 128 KB на один файл субтитров
+# Лимит на очищенный текст (после удаления таймкодов/тегов)
+# Raw VTT обычно в 3-4x больше чистого текста — читаем файл целиком
+_MAX_CHARS = 1_000_000  # 1 млн символов ~ 1 MB чистого текста
 
 
 def create_get_transcript_tool(mcp: Any, history_repo: Any) -> None:
@@ -87,7 +89,7 @@ def create_get_transcript_tool(mcp: Any, history_repo: Any) -> None:
             - transcript_text: clean text content (or raw if raw=True)
             - lang_detected: language code extracted from filename
             - format: "vtt" or "srt"
-            - truncated: True if content was cut to 128 KB limit
+            - truncated: True if text was cut to 1M char limit
             - available_langs: list of all available language codes
             Returns {"error": ..., "hint": ...} if not found or no subtitles.
         """
@@ -140,10 +142,9 @@ def create_get_transcript_tool(mcp: Any, history_repo: Any) -> None:
             else:
                 chosen = subtitle_paths[0]
 
-            # Читаем файл
-            raw_bytes = chosen.read_bytes()
-            truncated = len(raw_bytes) > _MAX_BYTES
-            content = raw_bytes[:_MAX_BYTES].decode("utf-8", errors="replace")
+            # Читаем файл целиком — лимит применяем ПОСЛЕ очистки
+            # (raw VTT ~3-4x больше чистого текста по объёму)
+            content = chosen.read_text(encoding="utf-8", errors="replace")
 
             fmt = "srt" if chosen.suffix.lower() == ".srt" else "vtt"
             lang_detected = _extract_lang(chosen)
@@ -152,6 +153,11 @@ def create_get_transcript_tool(mcp: Any, history_repo: Any) -> None:
                 text = content
             else:
                 text = _clean_subtitle_text(content, fmt)
+
+            # Обрезаем если текст превышает лимит
+            truncated = len(text) > _MAX_CHARS
+            if truncated:
+                text = text[:_MAX_CHARS]
 
             logger.info(
                 "mcp.get_transcript id=%d lang=%s text_len=%d",

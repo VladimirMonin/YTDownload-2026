@@ -30,7 +30,16 @@ def setup_logging(log_dir: Path | None = None) -> None:
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    handlers: list[logging.Handler] = [logging.StreamHandler()]
+    # StreamHandler с явной кодировкой — иначе на Windows cp1251 → кириллица в \xNN
+    import sys
+    stream_handler = logging.StreamHandler(stream=sys.stdout)
+    try:
+        # Python 3.9+ поддерживает reconfigure
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+    handlers: list[logging.Handler] = [stream_handler]
 
     file_handler = RotatingFileHandler(
         log_dir / "app.log",
