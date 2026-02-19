@@ -16,12 +16,11 @@ from PySide6.QtGui import QColor, QFont, QPalette
 from PySide6.QtWidgets import QApplication
 
 # Абсолютный путь к check_white.svg (для QSS url())
+# Qt в url() принимает POSIX-путь: C:/PY/... или ///C:/PY/...
+# НЕ добавляем одиночный / — это создаёт /C:/PY/... → Qt дублирует диск
 _CHECK_SVG = (
     Path(__file__).parent.parent.parent.parent / "resources" / "icons" / "check_white.svg"
 ).as_posix()
-# Qt на Windows требует file:/// для абсолютных путей в url()
-if not _CHECK_SVG.startswith("/"):
-    _CHECK_SVG = "/" + _CHECK_SVG
 
 
 class Theme(str, Enum):

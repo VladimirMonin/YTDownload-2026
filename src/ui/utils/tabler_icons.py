@@ -95,6 +95,7 @@ def _get_auto_color() -> str:
     """Определяет цвет иконки из текущей темы приложения."""
     try:
         from .theme import get_color  # noqa: PLC0415
+
         return get_color("text_primary")
     except Exception:
         pass

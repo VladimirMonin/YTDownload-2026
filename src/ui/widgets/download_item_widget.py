@@ -126,7 +126,7 @@ class DownloadItemWidget(QFrame):
         root.addLayout(bottom)
 
         # ── Коннекты ─────────────────────────────────────────────────
-        self._cancel_btn.clicked.connect(lambda: self.cancel_requested.emit(self._task_id))
+        self._cancel_btn.clicked.connect(lambda checked: self.cancel_requested.emit(self._task_id))
 
         self._apply_status(task.status)
 

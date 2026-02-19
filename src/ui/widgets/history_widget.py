@@ -129,7 +129,7 @@ class HistoryItemWidget(QFrame):
             open_btn.setIcon(get_icon(TablerIcons.FOLDER_OPEN, size=16))
             open_btn.setFixedSize(28, 28)
             open_btn.setToolTip(self.tr("Открыть папку"))
-            open_btn.clicked.connect(lambda _f=target_folder: self.open_folder_requested.emit(_f))
+            open_btn.clicked.connect(lambda checked, _f=target_folder: self.open_folder_requested.emit(_f))
             layout.addWidget(open_btn)
 
         # Кнопка «Удалить»
