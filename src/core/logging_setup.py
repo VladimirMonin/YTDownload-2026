@@ -32,6 +32,7 @@ def setup_logging(log_dir: Path | None = None) -> None:
 
     # StreamHandler с явной кодировкой — иначе на Windows cp1251 → кириллица в \xNN
     import sys
+
     stream_handler = logging.StreamHandler(stream=sys.stdout)
     try:
         # Python 3.9+ поддерживает reconfigure
