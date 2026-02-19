@@ -30,7 +30,12 @@ def create_get_transcript_tool(mcp: Any, history_repo: Any) -> None:
     """
 
     @mcp.tool()
-    def get_transcript(id: int, lang: str | None = None, raw: bool = False) -> dict:
+    def get_transcript(
+        id: int,
+        lang: str | None = None,
+        raw: bool = False,
+        timestamps: bool = False,
+    ) -> dict:
         """Read subtitle/transcript file content for a downloaded video.
 
         USE THIS TOOL WHEN:
@@ -38,6 +43,7 @@ def create_get_transcript_tool(mcp: Any, history_repo: Any) -> None:
         - User asks for subtitles of a specific download
         - You need the transcript text for summarization, translation, or analysis
         - User wants to find a specific moment or quote from a video
+        - User asks "at what time did they say X" → use timestamps=True
 
         TRIGGER PHRASES:
         - "show me the transcript of download #5"
@@ -46,13 +52,14 @@ def create_get_transcript_tool(mcp: Any, history_repo: Any) -> None:
         - "get the Russian transcript of download 3"
         - "can you summarize the transcript for download 7?"
         - "find the subtitle file for video ID 10"
-        - "get the path to the English subtitles for download 4"
+        - "at what moment did they talk about X?" → use timestamps=True
 
         WORKFLOW:
         1. Use list_downloads() or search_downloads() to find the ID.
         2. Call get_transcript(id) to get the transcript text.
         3. If multiple subtitle files exist, use lang= to pick a specific language.
-        4. Set raw=True only if you need the raw .vtt/.srt markup with timestamps.
+        4. Use timestamps=True to get [HH:MM:SS] markers before each phrase.
+        5. Set raw=True only if you need the raw .vtt/.srt markup.
 
         NOTE: Subtitles are only available if save_subtitles=True was set when
         downloading. Check subtitle_paths in get_download(id) first.
@@ -63,23 +70,27 @@ def create_get_transcript_tool(mcp: Any, history_repo: Any) -> None:
         - To get Russian: lang="ru". English: lang="en". Auto-detected: lang="en-orig".
 
         TEXT FORMAT:
-        - By default (raw=False): returns clean text without VTT/SRT markup and
-          without duplicate lines (consecutive identical lines merged).
-        - raw=True: returns the original file content with all timestamps.
+        - raw=False, timestamps=False (default): clean text, no markup, no duplicates.
+        - raw=False, timestamps=True: clean text with [HH:MM:SS] before each phrase.
+          Best for finding specific moments: "[00:03:42] Вот как устроена архитектура"
+        - raw=True: original VTT/SRT file content with all timing markup.
 
         EXAMPLES:
-        - get_transcript(id=5)               → clean text of first subtitle file
-        - get_transcript(id=5, lang="ru")    → Russian subtitles text
-        - get_transcript(id=5, lang="en")    → English subtitles text
-        - get_transcript(id=5, raw=True)     → raw .vtt/.srt with timestamps
-        - get_transcript(id=12, lang="auto") → auto-generated subtitles (if "auto" in name)
+        - get_transcript(id=5)                        → clean plain text
+        - get_transcript(id=5, timestamps=True)       → [00:01:23] phrase per line
+        - get_transcript(id=5, lang="ru")             → Russian subtitles
+        - get_transcript(id=5, lang="en", timestamps=True) → English with timecodes
+        - get_transcript(id=5, raw=True)              → raw .vtt/.srt with all markup
 
         Args:
             id: Numeric download ID.
             lang: Optional language code to select a specific subtitle file.
                   E.g. "ru", "en", "kk", "en-orig". None = first available.
-            raw: If True, return raw VTT/SRT content with timestamps.
+            raw: If True, return raw VTT/SRT content with all timing markup.
                  Default False = clean readable text.
+            timestamps: If True, prefix each phrase with [HH:MM:SS] timecode.
+                  Useful when user wants to find specific moments in a video.
+                  Ignored when raw=True.
 
         Returns:
             Dict with:
@@ -151,6 +162,8 @@ def create_get_transcript_tool(mcp: Any, history_repo: Any) -> None:
 
             if raw:
                 text = content
+            elif timestamps:
+                text = _clean_subtitle_text_with_timestamps(content, fmt)
             else:
                 text = _clean_subtitle_text(content, fmt)
 
@@ -160,9 +173,10 @@ def create_get_transcript_tool(mcp: Any, history_repo: Any) -> None:
                 text = text[:_MAX_CHARS]
 
             logger.info(
-                "mcp.get_transcript id=%d lang=%s text_len=%d",
+                "mcp.get_transcript id=%d lang=%s timestamps=%s text_len=%d",
                 id,
                 lang_detected,
+                timestamps,
                 len(text),
             )
 
@@ -265,3 +279,75 @@ def _clean_subtitle_text(content: str, fmt: str) -> str:
         text_lines.append(clean)
 
     return "\n".join(text_lines)
+
+
+def _clean_subtitle_text_with_timestamps(content: str, fmt: str) -> str:
+    """Преобразует VTT/SRT в текст с читаемыми таймкодами [HH:MM:SS].
+
+    Формат вывода:
+        [00:00:01] Привет, сегодня поговорим об ИИ
+        [00:00:05] Как я создал девушку с нуля
+
+    Дублирующиеся последовательные строки объединяются — таймкод берётся
+    от первого вхождения.
+
+    Args:
+        content: Содержимое файла субтитров.
+        fmt: Формат — "vtt" или "srt".
+
+    Returns:
+        Текст с таймкодами [HH:MM:SS] перед каждой уникальной фразой.
+    """
+    lines = content.splitlines()
+    result: list[str] = []
+    in_header = fmt == "vtt"
+    current_time: str | None = None
+    last_clean: str | None = None
+
+    _timestamp_vtt = re.compile(
+        r"^(\d{2}:\d{2}:\d{2})[.,]\d{3}\s*-->\s*\d{2}:\d{2}:\d{2}"
+    )
+    _timestamp_srt = re.compile(
+        r"^(\d{2}:\d{2}:\d{2}),\d{3}\s*-->\s*\d{2}:\d{2}:\d{2}"
+    )
+    _index_srt = re.compile(r"^\d+$")
+    _html_tag = re.compile(r"<[^>]+>")
+    _vtt_cue_settings = re.compile(r"^\d{2}:\d{2}.*-->.*(line|align|position|size):")
+
+    for line in lines:
+        stripped = line.strip()
+
+        # Пропускаем VTT заголовок
+        if in_header:
+            if stripped == "":
+                in_header = False
+            continue
+
+        # Запоминаем таймкод начала блока
+        m = _timestamp_vtt.match(stripped) or _timestamp_srt.match(stripped)
+        if m:
+            current_time = m.group(1)  # "HH:MM:SS"
+            continue
+
+        if _vtt_cue_settings.match(stripped):
+            continue
+
+        if fmt == "srt" and _index_srt.match(stripped):
+            continue
+
+        # Чистим текст
+        clean = _html_tag.sub("", stripped)
+        clean = re.sub(r"<\d+:\d+:\d+\.\d+>", "", clean).strip()
+
+        if not clean:
+            continue
+
+        # Дубликат подряд — пропускаем
+        if last_clean == clean:
+            continue
+
+        last_clean = clean
+        prefix = f"[{current_time}] " if current_time else ""
+        result.append(f"{prefix}{clean}")
+
+    return "\n".join(result)
