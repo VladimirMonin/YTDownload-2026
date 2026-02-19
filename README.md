@@ -157,14 +157,14 @@ uv run python -m src.infrastructure.mcp.server --host 127.0.0.1 --port 8765
 }
 ```
 
-#### Cline / Chatbox (SSE transport)
+#### Cline / Chatbox
 
 ```json
 {
   "mcpServers": {
     "ytdownload-2026": {
-      "type": "sse",
-      "url": "http://127.0.0.1:8765/sse"
+      "type": "streamable-http",
+      "url": "http://127.0.0.1:8765/mcp"
     }
   }
 }
