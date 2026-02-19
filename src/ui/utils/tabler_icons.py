@@ -92,13 +92,17 @@ def _icon_path(icon: TablerIcons) -> Path:
 
 
 def _get_auto_color() -> str:
-    """Определяет цвет иконки из текущей палитры приложения."""
+    """Определяет цвет иконки из текущей темы приложения."""
+    try:
+        from .theme import get_color  # noqa: PLC0415
+        return get_color("text_primary")
+    except Exception:
+        pass
     app = QApplication.instance()
     if app:
         palette = app.palette()
-        color = palette.text().color()
-        return color.name()
-    return "#FFFFFF"
+        return palette.text().color().name()
+    return "#e8eaf6"
 
 
 def _render_svg(icon: TablerIcons, size: int, color: Optional[str] = None) -> QPixmap:
@@ -128,14 +132,21 @@ def _render_svg(icon: TablerIcons, size: int, color: Optional[str] = None) -> QP
     )
 
     renderer = QSvgRenderer(svg_modified)
-    pixmap = QPixmap(QSize(size, size))
+
+    # HiDPI: рендерим в размер с учётом device pixel ratio
+    app = QApplication.instance()
+    dpr = app.devicePixelRatio() if app else 1.0
+    phys = QSize(int(size * dpr), int(size * dpr))
+    pixmap = QPixmap(phys)
     pixmap.fill(Qt.GlobalColor.transparent)
 
     painter = QPainter(pixmap)
     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+    painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
     renderer.render(painter)
     painter.end()
 
+    pixmap.setDevicePixelRatio(dpr)
     return pixmap
 
 

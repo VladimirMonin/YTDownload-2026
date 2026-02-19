@@ -93,6 +93,8 @@ class HistoryItemWidget(QFrame):
 
         title_row_widget = QWidget()
         title_row_widget.setLayout(title_row)
+        title_row_widget.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        title_row_widget.setStyleSheet("background: transparent;")
         info_layout.addWidget(title_row_widget)
 
         # Мета-строка

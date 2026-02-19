@@ -10,9 +10,18 @@
 from __future__ import annotations
 
 from enum import Enum
+from pathlib import Path
 
 from PySide6.QtGui import QColor, QFont, QPalette
 from PySide6.QtWidgets import QApplication
+
+# Абсолютный путь к check_white.svg (для QSS url())
+_CHECK_SVG = (
+    Path(__file__).parent.parent.parent.parent / "resources" / "icons" / "check_white.svg"
+).as_posix()
+# Qt на Windows требует file:/// для абсолютных путей в url()
+if not _CHECK_SVG.startswith("/"):
+    _CHECK_SVG = "/" + _CHECK_SVG
 
 
 class Theme(str, Enum):
@@ -205,21 +214,28 @@ QComboBox QAbstractItemView {{
 /* === Чекбокс === */
 QCheckBox {{
     color: {c["text_primary"]};
-    spacing: 6px;
+    spacing: 8px;
+    background: transparent;
 }}
 QCheckBox::indicator {{
     width: 16px;
     height: 16px;
-    border: 1px solid {c["border"]};
+    border: 1.5px solid {c["border"]};
     border-radius: 3px;
     background-color: {c["bg_input"]};
 }}
 QCheckBox::indicator:checked {{
     background-color: {c["accent"]};
     border-color: {c["accent"]};
+    image: url({_CHECK_SVG});
 }}
 QCheckBox::indicator:hover {{
     border-color: {c["border_focus"]};
+}}
+QCheckBox::indicator:checked:hover {{
+    background-color: {c["accent_hover"]};
+    border-color: {c["accent_hover"]};
+    image: url({_CHECK_SVG});
 }}
 
 /* === Прогрессбар === */
@@ -238,7 +254,7 @@ QProgressBar::chunk {{
 
 /* === Метки === */
 QLabel {{
-    background-color: transparent;
+    background: transparent;
     color: {c["text_primary"]};
 }}
 QLabel#secondary {{

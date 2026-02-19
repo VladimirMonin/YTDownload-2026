@@ -87,7 +87,7 @@ class MainWindow(QMainWindow):
 
     def _init_ui(self) -> None:
         self.setWindowTitle("YTDownload 2026")
-        self.setMinimumSize(600, 700)
+        self.setMinimumSize(800, 700)
 
         central = QWidget()
         self.setCentralWidget(central)
@@ -387,6 +387,8 @@ class MainWindow(QMainWindow):
             widget.update_icons()
         self._tabs.setTabIcon(0, get_icon(TablerIcons.DOWNLOAD, size=16))
         self._tabs.setTabIcon(1, get_icon(TablerIcons.HISTORY, size=16))
+        # Перерисовываем историю — иконки статусов зависят от темы
+        self._refresh_history()
 
     def _refresh_history(self) -> None:
         entries = self._history_manager.get_all()
@@ -400,7 +402,7 @@ class MainWindow(QMainWindow):
         screen = QApplication.primaryScreen()
         if screen:
             geo = screen.availableGeometry()
-            w = min(760, geo.width() - 40)
+            w = min(900, geo.width() - 40)
             h = min(900, geo.height() - 40)
             x = (geo.width() - w) // 2
             y = (geo.height() - h) // 2
