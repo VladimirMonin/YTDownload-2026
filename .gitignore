@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+*.spec
+
+# UV / venv
+.venv/
+.python-version
+
+# Tests
+tests/downloads/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Mypy
+.mypy_cache/
+
+# IDEs
+.vscode/settings.json
+.idea/
+
+# App data (dev)
+*.log
+*.error.log
+
+# PyInstaller output
+dist/
+build/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# FFmpeg vendor binaries (слишком большие для git, ~160 MB каждый)
+vendor/ffmpeg/bin/*.exe
+vendor/ffmpeg/bin/*.dll
