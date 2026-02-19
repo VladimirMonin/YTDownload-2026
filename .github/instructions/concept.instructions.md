@@ -4,9 +4,9 @@ name: "ConceptInstructions"
 description: "Концепция YT Downloader"
 ---
 
-# 🎬 YT Downloader — Project Concept
+# 🎬 YTDownload 2026 — Project Concept
 
-**Stack:** Python 3.12+ | PySide6 | yt-dlp | FFmpeg (vendor) | UV
+**Stack:** Python 3.12+ | PySide6 | yt-dlp | FFmpeg (vendor) | UV | FastMCP
 
 ---
 
@@ -18,7 +18,20 @@ src/
 ├── domain/         # Models, Protocols (pure Python, без UI/сети)
 │   ├── models/     # DownloadTask, VideoInfo, AppSettings, HistoryEntry
 │   └── protocols/  # IDownloadService, IHistoryRepository, ISettingsRepository
-├── infrastructure/ # yt-dlp wrapper, FFmpeg checker, JSON repos
+├── infrastructure/ # yt-dlp wrapper, FFmpeg checker, JSON repos, MCP server
+│   └── mcp/
+│       ├── server.py        # FastMCP + uvicorn в отдельном thread
+│       └── tools/           # 9 инструментов, каждый в отдельном модуле (SRP)
+│           ├── _utils.py
+│           ├── list_downloads.py
+│           ├── get_download.py
+│           ├── search_downloads.py
+│           ├── get_file_paths.py
+│           ├── get_transcript.py    # читает .vtt/.srt субтитры
+│           ├── read_description.py  # читает .description файл
+│           ├── add_download.py
+│           ├── cancel_download.py
+│           └── delete_download.py
 ├── application/    # DownloadCoordinator (оркестрация загрузок)
 └── ui/             # PySide6 GUI
     ├── managers/   # DownloadManager, HistoryManager

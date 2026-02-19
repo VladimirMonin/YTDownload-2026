@@ -86,7 +86,7 @@ class MainWindow(QMainWindow):
     # ─────────────────────────────────────────────────────────────────
 
     def _init_ui(self) -> None:
-        self.setWindowTitle("YT Downloader")
+        self.setWindowTitle("YTDownload 2026")
         self.setMinimumSize(600, 700)
 
         central = QWidget()
@@ -144,7 +144,7 @@ class MainWindow(QMainWindow):
         icon_lbl.setPixmap(get_icon(TablerIcons.CLOUD_DOWNLOAD, size=28).pixmap(28, 28))
         layout.addWidget(icon_lbl)
 
-        title_lbl = QLabel(self.tr("YT Downloader"))
+        title_lbl = QLabel(self.tr("YTDownload 2026"))
         title_lbl.setObjectName("title")
         layout.addWidget(title_lbl)
 
@@ -351,7 +351,9 @@ class MainWindow(QMainWindow):
                             "ui.history_delete.files_removed id=%d path=%s", entry_id, folder
                         )
                     except Exception:
-                        logger.error("ui.history_delete.files_failed id=%d", entry_id, exc_info=True)
+                        logger.error(
+                            "ui.history_delete.files_failed id=%d", entry_id, exc_info=True
+                        )
 
         self._history_manager.delete(entry_id)
         self._refresh_history()

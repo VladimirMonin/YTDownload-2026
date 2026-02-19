@@ -32,12 +32,14 @@ def create_mcp_server(services: dict):  # type: ignore[return]
         raise
 
     mcp = FastMCP(
-        name="yt-downloader",
+        name="ytdownload-2026",
         instructions=(
-            "YT Downloader MCP server. "
-            "Provides tools to list, search, and manage YouTube downloads. "
-            "Use list_downloads() to see all downloads, get_download(id) for details, "
-            "add_to_queue(url) to start a new download, get_file_paths(id) for file locations."
+            "YTDownload 2026 MCP server. "
+            "Tools for managing YouTube downloads: list, search, add, delete, read content. "
+            "Start with list_downloads() to see history. "
+            "Use add_download(url) to queue a new video or playlist. "
+            "Use get_transcript(id) for subtitle text, read_description(id) for description. "
+            "Use get_file_paths(id) to get absolute file paths to downloaded media."
         ),
     )
 
