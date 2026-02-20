@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import os
+import sys
 from pathlib import Path
 
 from src.application.download_coordinator import DownloadCoordinator
@@ -38,12 +39,18 @@ def initialize_app() -> dict:
         d.mkdir(parents=True, exist_ok=True)
 
     # FFmpeg (vendor поставка)
+    # В frozen-режиме (PyInstaller) FFmpeg лежит рядом с .exe:
+    #   dist/YTDownloader/vendor/ffmpeg/bin/ffmpeg.exe  (вне _internal — LGPL-compliant)
+    # В dev-режиме:
+    #   <project_root>/vendor/ffmpeg/bin/ffmpeg.exe
     _ffmpeg_env = os.getenv("YTDL_FFMPEG_PATH", "")
-    ffmpeg_path = (
-        Path(_ffmpeg_env)
-        if _ffmpeg_env
-        else Path(__file__).parent / "vendor" / "ffmpeg" / "bin" / "ffmpeg.exe"
-    )
+    if _ffmpeg_env:
+        ffmpeg_path = Path(_ffmpeg_env)
+    elif getattr(sys, "frozen", False):
+        # sys.executable = dist/YTDownloader/YTDownloader.exe
+        ffmpeg_path = Path(sys.executable).parent / "vendor" / "ffmpeg" / "bin" / "ffmpeg.exe"
+    else:
+        ffmpeg_path = Path(__file__).parent / "vendor" / "ffmpeg" / "bin" / "ffmpeg.exe"
 
     # Репозитории (JSON)
     settings_repo = JsonSettingsRepository(config_dir)
