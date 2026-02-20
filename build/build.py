@@ -21,7 +21,7 @@ import sys
 from pathlib import Path
 
 
-ROOT = Path(__file__).parent.parent          # c:\PY\youtube_downloader
+ROOT = Path(__file__).parent.parent  # c:\PY\youtube_downloader
 BUILD_DIR = ROOT / "build"
 DIST_DIR = ROOT / "dist" / "YTDownloader"
 SPEC_FILE = BUILD_DIR / "ytdownloader.spec"
@@ -76,8 +76,8 @@ def copy_licenses() -> None:
     dst_licenses.mkdir(parents=True, exist_ok=True)
 
     entries = [
-        (ROOT / "vendor" / "ffmpeg" / "LICENSE.txt",      "FFmpeg_LICENSE.txt"),
-        (ROOT / "resources" / "fonts" / "OFL.txt",         "Fonts_OFL.txt"),
+        (ROOT / "vendor" / "ffmpeg" / "LICENSE.txt", "FFmpeg_LICENSE.txt"),
+        (ROOT / "resources" / "fonts" / "OFL.txt", "Fonts_OFL.txt"),
         (ROOT / "resources" / "icons" / "tabler" / "LICENSE", "TablerIcons_LICENSE.txt"),
     ]
 
