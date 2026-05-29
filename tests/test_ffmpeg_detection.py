@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from src.infrastructure.ffmpeg import find_executable
@@ -41,7 +42,8 @@ def test_unix_vendor_binary_is_used_when_no_exe_exists(tmp_path: Path) -> None:
 def test_system_path_is_fallback(monkeypatch, tmp_path: Path) -> None:
     vendor = tmp_path / "empty-vendor"
     bin_dir = tmp_path / "path-bin"
-    executable = _touch(bin_dir / "ffmpeg")
+    executable_name = "ffmpeg.exe" if os.name == "nt" else "ffmpeg"
+    executable = _touch(bin_dir / executable_name)
     executable.chmod(0o755)
 
     monkeypatch.setenv("PATH", str(bin_dir))
