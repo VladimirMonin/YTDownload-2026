@@ -27,7 +27,7 @@ def create_add_download_tool(mcp: Any, coordinator: Any) -> None:
     @mcp.tool()
     def add_download(
         url: str,
-        quality: str = "best",
+        quality: str = "720p",
         download_type: str = "video",
         subtitle_lang: str | None = None,
         save_subtitles: bool = False,
@@ -58,9 +58,9 @@ def create_add_download_tool(mcp: Any, coordinator: Any) -> None:
         5. Use get_download(task_id) when done to get file paths.
 
         QUALITY OPTIONS:
-        - "best"  → highest available quality (default)
+        - "best"  → highest available quality
         - "1080p" → Full HD
-        - "720p"  → HD
+        - "720p"  → HD (default)
         - "480p"  → SD
         - "360p"  → low quality
         - "audio" → audio track only (sets download_type="audio" automatically)
@@ -71,7 +71,7 @@ def create_add_download_tool(mcp: Any, coordinator: Any) -> None:
 
         EXAMPLES:
         - add_download("https://youtu.be/dQw4w9WgXcQ")
-            → best quality video with no extras
+            → 720p video with no extras
         - add_download("https://youtu.be/...", quality="1080p", save_thumbnail=True)
             → 1080p video + thumbnail image
         - add_download("https://youtu.be/...", download_type="audio")
