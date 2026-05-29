@@ -1,8 +1,17 @@
 # 04 — MCP and GUI
 
+## Common checks
+
+Use the checked-in smoke scripts instead of ad-hoc snippets when possible:
+
+```bash
+uv run python scripts/smoke_mcp.py
+uv run python scripts/smoke_gui.py
+```
+
 ## GUI smoke on Linux/headless
 
-Use Qt offscreen for non-interactive smoke checks:
+Use Qt offscreen for non-interactive smoke checks. The checked-in script sets this automatically:
 
 ```bash
 QT_QPA_PLATFORM=offscreen uv run python <script>
@@ -36,6 +45,16 @@ Expected tools currently include:
 - `add_download`
 - `cancel_download`
 - `delete_download`
+
+## Stdio MCP entry point
+
+Hermes native MCP can run the project over stdio via:
+
+```bash
+uv run python mcp_stdio_server.py
+```
+
+This wrapper reuses the same tool registration as the HTTP MCP server and must stay in sync with `src/infrastructure/mcp/server.py`.
 
 ## Real MCP server
 

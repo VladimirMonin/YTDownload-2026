@@ -6,6 +6,7 @@ For setup or Linux compatibility work:
 
 - `uv sync` completed or the failure is explained.
 - Offline tests passed: `uv run pytest tests/ -m "not e2e" -q`.
+- Cross-platform CI should run the offline suite on Linux and Windows when workflow files are present.
 - Changed Python files pass at least narrow lint for syntax/import errors:
   `uv run ruff check --select E,F,I <changed files>`.
 - If GUI behavior is affected, run a GUI smoke.

@@ -29,7 +29,8 @@ Before making changes, read these project instructions:
 uv sync
 uv run pytest tests/ -m "not e2e" -q
 uv run ruff check --select E,F,I <changed files>
-QT_QPA_PLATFORM=offscreen uv run python <gui smoke script>
+uv run python scripts/smoke_mcp.py
+uv run python scripts/smoke_gui.py
 ```
 
 See `docs/agent-instructions/` for the detailed rules.
