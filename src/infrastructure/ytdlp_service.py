@@ -15,6 +15,7 @@ from typing import Any, Callable, Optional
 from ..domain.models import AppSettings, DownloadTask, VideoInfo
 from ..domain.models.app_settings import DownloadType, QualityOption
 from ..domain.protocols import IDownloadService
+from .ffmpeg import find_ffmpeg
 
 logger = logging.getLogger(__name__)
 
@@ -66,16 +67,8 @@ class YtDlpService(IDownloadService):
 
     @staticmethod
     def _detect_ffmpeg() -> Optional[Path]:
-        """Ищет ffmpeg в vendor/ffmpeg/bin/ рядом с проектом."""
-        here = Path(__file__).parent.parent.parent
-        candidates = [
-            here / "vendor" / "ffmpeg" / "bin" / "ffmpeg.exe",
-            here / "vendor" / "ffmpeg" / "bin" / "ffmpeg",
-        ]
-        for p in candidates:
-            if p.exists():
-                return p
-        return None
+        """Ищет ffmpeg в env, vendor/ffmpeg/bin или системном PATH."""
+        return find_ffmpeg()
 
     def _base_opts(self, settings: AppSettings) -> dict[str, Any]:
         """Строит базовый словарь опций yt-dlp."""
@@ -127,11 +120,6 @@ class YtDlpService(IDownloadService):
         count = len(entries) if entries else 0
 
         # Для одиночного видео берём его данные напрямую
-        source = data if not is_playlist else {}
-        if is_playlist and entries:
-            # Для инфо берём данные из первого элемента плейлиста если возможно
-            source = entries[0] if entries else data
-
         return VideoInfo(
             id=data.get("id", ""),
             title=data.get("title", ""),
@@ -204,13 +192,6 @@ class YtDlpService(IDownloadService):
                 if fname:
                     video_folder["path"] = Path(fname).parent
                     logger.info("ytdlp.download.finished ext=%s", Path(fname).suffix)
-
-        # Настройки yt-dlp
-        settings_proxy = task.url  # Просто для получения настроек — реальный proxy в opts
-        import sys
-
-        # Получаем proxy из app env — здесь передаём через task
-        proxy = ""  # Proxy должен передаваться через AppSettings, но у нас task
 
         opts = {
             "format": _build_format_string(task),

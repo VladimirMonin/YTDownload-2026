@@ -8,11 +8,11 @@ from __future__ import annotations
 
 import logging
 import os
-import sys
 from pathlib import Path
 
 from src.application.download_coordinator import DownloadCoordinator
 from src.core.event_bus import EventBus
+from src.infrastructure.ffmpeg import find_ffmpeg
 from src.infrastructure.repositories import (
     JsonHistoryRepository,
     JsonSettingsRepository,
@@ -38,19 +38,10 @@ def initialize_app() -> dict:
     for d in (config_dir, data_dir, logs_dir):
         d.mkdir(parents=True, exist_ok=True)
 
-    # FFmpeg (vendor поставка)
-    # В frozen-режиме (PyInstaller) FFmpeg лежит рядом с .exe:
-    #   dist/YTDownloader/vendor/ffmpeg/bin/ffmpeg.exe  (вне _internal — LGPL-compliant)
-    # В dev-режиме:
-    #   <project_root>/vendor/ffmpeg/bin/ffmpeg.exe
-    _ffmpeg_env = os.getenv("YTDL_FFMPEG_PATH", "")
-    if _ffmpeg_env:
-        ffmpeg_path = Path(_ffmpeg_env)
-    elif getattr(sys, "frozen", False):
-        # sys.executable = dist/YTDownloader/YTDownloader.exe
-        ffmpeg_path = Path(sys.executable).parent / "vendor" / "ffmpeg" / "bin" / "ffmpeg.exe"
-    else:
-        ffmpeg_path = Path(__file__).parent / "vendor" / "ffmpeg" / "bin" / "ffmpeg.exe"
+    # FFmpeg: explicit env path → bundled vendor binary → system PATH.
+    # This keeps Windows vendor builds working and lets Linux dev runs use
+    # the distro-provided ffmpeg package.
+    ffmpeg_path = find_ffmpeg()
 
     # Репозитории (JSON)
     settings_repo = JsonSettingsRepository(config_dir)

@@ -14,6 +14,8 @@ from pathlib import Path
 
 import pytest
 
+from src.infrastructure.ffmpeg import find_ffplay
+
 
 class TestFFmpegVendor:
     """Тесты наличия и работоспособности FFmpeg."""
@@ -29,9 +31,9 @@ class TestFFmpegVendor:
         assert ffprobe_path.is_file()
 
     def test_ffplay_exists(self) -> None:
-        """ffplay.exe должен существовать в vendor/."""
-        root = Path(__file__).parent.parent
-        ffplay = root / "vendor" / "ffmpeg" / "bin" / "ffplay.exe"
+        """ffplay должен существовать в env, vendor/ или системном PATH."""
+        ffplay = find_ffplay()
+        assert ffplay is not None, "FFplay not found in env, vendor/ffmpeg/bin or PATH"
         assert ffplay.exists(), f"FFplay not found: {ffplay}"
 
     def test_ffmpeg_version(self, ffmpeg_path: Path) -> None:
@@ -56,15 +58,10 @@ class TestFFmpegVendor:
         assert result.returncode == 0, f"ffprobe -version failed: {result.stderr}"
         assert "ffprobe version" in result.stdout.lower()
 
-    def test_ffprobe_json_output(self, ffprobe_path: Path, tmp_path: Path) -> None:
+    def test_ffprobe_json_output(
+        self, ffmpeg_path: Path, ffprobe_path: Path, tmp_path: Path
+    ) -> None:
         """ffprobe должен корректно анализировать медиафайл и возвращать JSON."""
-        # Создаём минимальный тестовый файл через ffmpeg
-        from tests.conftest import PROJECT_ROOT
-
-        ffmpeg_path = PROJECT_ROOT / "vendor" / "ffmpeg" / "bin" / "ffmpeg.exe"
-        if not ffmpeg_path.exists():
-            pytest.skip("FFmpeg not available")
-
         test_video = tmp_path / "test.mp4"
 
         # Генерируем 1-секундное тестовое видео (без кодирования сети)
@@ -133,11 +130,11 @@ class TestFFmpegFfcheckerUtility:
 
         from main import initialize_app
 
-        # Просто убеждаемся что initialize_app не падает
-        # (не запускаем приложение, просто читаем путь)
-        assert str(ffmpeg_path) == os.environ.get("YTDL_FFMPEG_PATH")
-
-        if old is None:
-            del os.environ["YTDL_FFMPEG_PATH"]
-        else:
-            os.environ["YTDL_FFMPEG_PATH"] = old
+        try:
+            services = initialize_app()
+            assert services["coordinator"]._ffmpeg_path == ffmpeg_path
+        finally:
+            if old is None:
+                del os.environ["YTDL_FFMPEG_PATH"]
+            else:
+                os.environ["YTDL_FFMPEG_PATH"] = old

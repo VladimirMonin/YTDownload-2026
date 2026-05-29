@@ -59,8 +59,9 @@ uv run python app.py
 ```
 
 > **FFmpeg** нужен для слияния видео+аудио в .mp4.  
-> Положите `ffmpeg.exe`, `ffprobe.exe`, `ffplay.exe` в `vendor/ffmpeg/bin/`.  
-> Скачать: [gyan.dev](https://www.gyan.dev/ffmpeg/builds/) или [BtbN/FFmpeg-Builds](https://github.com/BtbN/FFmpeg-Builds/releases).
+> Linux/macOS: приложение ищет `ffmpeg`, `ffprobe`, `ffplay` в системном `PATH` — обычно достаточно установить пакет `ffmpeg`.  
+> Windows: положите `ffmpeg.exe`, `ffprobe.exe`, `ffplay.exe` в `vendor/ffmpeg/bin/`.  
+> Явный путь к ffmpeg можно задать через `YTDL_FFMPEG_PATH`.
 
 ---
 
@@ -250,7 +251,9 @@ uv run ruff check src/ tests/
 | Переменная | По умолчанию | Описание |
 |------------|-------------|----------|
 | `YTDL_LOG_LEVEL` | `INFO` | Уровень логирования (`DEBUG`/`INFO`/`WARNING`) |
-| `YTDL_FFMPEG_PATH` | `vendor/ffmpeg/bin/ffmpeg.exe` | Путь к ffmpeg.exe |
+| `YTDL_FFMPEG_PATH` | auto-detect | Явный путь к исполняемому `ffmpeg`; без него используется `vendor/ffmpeg/bin` или системный `PATH` |
+| `YTDL_FFPROBE_PATH` | auto-detect | Явный путь к `ffprobe` для тестов и диагностики |
+| `YTDL_FFPLAY_PATH` | auto-detect | Явный путь к `ffplay` для тестов и диагностики |
 
 ---
 
