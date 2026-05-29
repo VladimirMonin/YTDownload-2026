@@ -14,12 +14,17 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 VENDOR_BIN = PROJECT_ROOT / "vendor" / "ffmpeg" / "bin"
 
 
-def find_executable(name: str, env_var: str | None = None) -> Path | None:
+def find_executable(
+    name: str,
+    env_var: str | None = None,
+    vendor_bin: Path | None = None,
+) -> Path | None:
     """Return an executable path from env, vendor directory, or system PATH.
 
     Args:
         name: Executable base name, for example ``ffmpeg`` or ``ffprobe``.
         env_var: Optional environment variable with an explicit executable path.
+        vendor_bin: Optional vendor bin directory. Defaults to the project vendor path.
     """
     if env_var:
         env_value = os.getenv(env_var, "").strip()
@@ -28,9 +33,10 @@ def find_executable(name: str, env_var: str | None = None) -> Path | None:
             if path.exists():
                 return path
 
+    bin_dir = vendor_bin or VENDOR_BIN
     candidates = [
-        VENDOR_BIN / f"{name}.exe",
-        VENDOR_BIN / name,
+        bin_dir / f"{name}.exe",
+        bin_dir / name,
     ]
     for path in candidates:
         if path.exists():
