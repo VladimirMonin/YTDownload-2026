@@ -10,6 +10,7 @@ import logging
 import os
 from pathlib import Path
 
+from src.application.api import build_application_api
 from src.application.download_coordinator import DownloadCoordinator
 from src.core.event_bus import EventBus
 from src.infrastructure.ffmpeg import find_ffmpeg
@@ -63,8 +64,17 @@ def initialize_app() -> dict:
 
     logger.info("di.initialized data_dir=%s", data_dir)
 
+    application_api = build_application_api(
+        {
+            "coordinator": coordinator,
+            "history_repo": history_repo,
+        }
+    )
+
     return {
         "coordinator": coordinator,
+        "application_api": application_api,
+        "command_api": application_api,
         "history_repo": history_repo,
         "settings_repo": settings_repo,
         "settings": settings,

@@ -9,14 +9,12 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from src.application.command_api import CommandError
+
 logger = logging.getLogger(__name__)
 
-# Допустимые значения для валидации (защита от опечаток агента)
-_VALID_QUALITY = {"best", "1080p", "720p", "480p", "360p", "audio"}
-_VALID_TYPE = {"video", "audio"}
 
-
-def create_add_download_tool(mcp: Any, coordinator: Any) -> None:
+def create_add_download_tool(mcp: Any, command_api: Any) -> None:
     """Регистрирует инструмент add_download в FastMCP.
 
     Args:
@@ -35,6 +33,8 @@ def create_add_download_tool(mcp: Any, coordinator: Any) -> None:
         save_thumbnail: bool = False,
     ) -> dict:
         """Add a YouTube video or playlist URL to the download queue.
+
+        CLI PARITY: `ytdl queue add <url> [--quality ... --type ...]`
 
         USE THIS TOOL WHEN:
         - User wants to download a YouTube video or playlist
@@ -96,48 +96,11 @@ def create_add_download_tool(mcp: Any, coordinator: Any) -> None:
             Use task_id with get_download(id) to check result later.
             Returns {"error": ..., "hint": ...} on failure.
         """
-        # Валидация URL
-        if not url or not url.strip().startswith(("http://", "https://")):
-            return {
-                "error": "Invalid URL",
-                "hint": "URL must start with http:// or https://",
-            }
-
-        # Нормализация quality (если пользователь сказал "audio" в quality)
-        quality = quality.lower().strip()
-        if quality == "audio":
-            download_type = "audio"
-            quality = "best"
-
-        if quality not in _VALID_QUALITY:
-            return {
-                "error": f"Invalid quality '{quality}'",
-                "hint": f"Valid values: {', '.join(sorted(_VALID_QUALITY))}",
-            }
-        if download_type not in _VALID_TYPE:
-            return {
-                "error": f"Invalid download_type '{download_type}'",
-                "hint": "Valid values: video, audio",
-            }
-
         try:
-            from src.domain.models.app_settings import DownloadType, QualityOption
-
-            quality_map = {
-                "best": QualityOption.BEST,
-                "1080p": QualityOption.P1080,
-                "720p": QualityOption.P720,
-                "480p": QualityOption.P480,
-                "360p": QualityOption.P360,
-                "audio": QualityOption.AUDIO,
-            }
-            q = quality_map.get(quality, QualityOption.BEST)
-            dt = DownloadType.AUDIO if download_type == "audio" else DownloadType.VIDEO
-
-            task_id = coordinator.add(
-                url=url.strip(),
-                quality=q,
-                download_type=dt,
+            result = command_api.queue_add_download(
+                url=url,
+                quality=quality,
+                download_type=download_type,
                 subtitle_lang=subtitle_lang,
                 save_subtitles=save_subtitles,
                 save_description=save_description,
@@ -145,19 +108,20 @@ def create_add_download_tool(mcp: Any, coordinator: Any) -> None:
             )
             logger.info(
                 "mcp.add_download id=%d quality=%s type=%s",
-                task_id,
+                result.task_id,
                 quality,
                 download_type,
             )
             return {
-                "task_id": task_id,
-                "status": "queued",
+                "task_id": result.task_id,
+                "status": result.status,
                 "message": (
-                    f"Download #{task_id} queued. "
+                    f"Download #{result.task_id} queued. "
                     "Use get_download(id) when done to get file paths."
                 ),
             }
-
+        except CommandError as exc:
+            return {"error": exc.message, "hint": exc.hint}
         except Exception as exc:
             logger.error("mcp.add_download.error", exc_info=True)
             return {"error": str(exc), "hint": "Check app logs for details"}

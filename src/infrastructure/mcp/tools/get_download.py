@@ -9,22 +9,24 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from ._utils import entry_to_dict_full
+from src.application.dto import serialize_for_transport
 
 logger = logging.getLogger(__name__)
 
 
-def create_get_download_tool(mcp: Any, history_repo: Any) -> None:
+def create_get_download_tool(mcp: Any, api: Any) -> None:
     """Регистрирует инструмент get_download в FastMCP.
 
     Args:
         mcp: Экземпляр FastMCP.
-        history_repo: IHistoryRepository.
+        api: Shared application API.
     """
 
     @mcp.tool()
     def get_download(id: int) -> dict:
         """Get full details of a single download entry by numeric ID.
+
+        CLI PARITY: `ytdl history get <id>`
 
         USE THIS TOOL WHEN:
         - User asks about a specific download by number
@@ -59,13 +61,7 @@ def create_get_download_tool(mcp: Any, history_repo: Any) -> None:
             Returns {"error": ..., "hint": ...} if not found.
         """
         try:
-            entry = history_repo.get_by_id(id)
-            if entry is None:
-                return {
-                    "error": f"Download #{id} not found",
-                    "hint": "Use list_downloads() to see valid IDs",
-                }
-            result = entry_to_dict_full(entry)
+            result = serialize_for_transport(api.get_download(id))
             logger.info("mcp.get_download id=%d", id)
             return result
         except Exception as exc:

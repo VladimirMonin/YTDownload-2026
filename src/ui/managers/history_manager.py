@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
+from typing import Any
 
 from ...core.event_bus import EventBus
 from ...domain.protocols import IHistoryRepository
@@ -26,9 +26,11 @@ class HistoryManager:
         self,
         history_repo: IHistoryRepository,
         event_bus: EventBus,
+        command_api: Any | None = None,
     ) -> None:
         self._repo = history_repo
         self._event_bus = event_bus
+        self._command_api = command_api
         self._on_done_callback = None
         self._subscribe()
 
@@ -55,12 +57,18 @@ class HistoryManager:
         """Ищет записи по запросу."""
         return self._repo.search(query)
 
-    def delete(self, entry_id: int) -> None:
+    def delete(self, entry_id: int, *, delete_files: bool = False) -> Any:
         """Удаляет запись из истории."""
-        self._repo.delete(entry_id)
-        logger.info("history_manager.delete id=%d", entry_id)
+        if self._command_api is not None:
+            result = self._command_api.delete_download(entry_id, delete_files=delete_files)
+        else:
+            self._repo.delete(entry_id)
+            result = None
+
+        logger.info("history_manager.delete id=%d delete_files=%s", entry_id, delete_files)
         if self._on_done_callback:
             self._on_done_callback()
+        return result
 
     def _on_download_event(self, **_) -> None:
         """Вызывается при изменении статуса загрузки."""

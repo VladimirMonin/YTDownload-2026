@@ -24,6 +24,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from ...application.history_semantics import (
+    history_entry_matches_query,
+    resolve_history_entry_folder,
+    resolve_history_entry_title,
+)
 from ...domain.models import HistoryEntry
 from ...domain.models.download_task import DownloadStatus
 from ..utils.tabler_icons import TablerIcons, get_icon
@@ -84,7 +89,7 @@ class HistoryItemWidget(QFrame):
 
         # Заголовок для плейлиста показываем playlist_title, иначе title или URL
         display_title = (
-            self._entry.playlist_title if is_playlist else (self._entry.title or self._entry.url)
+            self._entry.playlist_title if is_playlist else resolve_history_entry_title(self._entry)
         )
         title_lbl = QLabel(display_title)
         title_lbl.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
@@ -151,18 +156,13 @@ class HistoryItemWidget(QFrame):
         Returns:
             Путь к папке или None.
         """
-        if self._entry.output_dir and self._entry.output_dir.exists():
-            return self._entry.output_dir
-        file_path = self._entry.video_path or self._entry.audio_path
-        if file_path and file_path.parent.exists():
-            return file_path.parent
-        return None
+        return resolve_history_entry_folder(self._entry)
 
     def _on_delete_clicked(self) -> None:
         """Показывает диалог подтверждения удаления."""
         msg = QMessageBox(self)
         msg.setWindowTitle(self.tr("Удалить запись"))
-        title_text = self._entry.playlist_title or self._entry.title or self._entry.url[:60]
+        title_text = resolve_history_entry_title(self._entry)
         msg.setText(self.tr("Удалить запись «%1» из истории?").replace("%1", title_text))
         msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
         msg.setDefaultButton(QMessageBox.StandardButton.Yes)
@@ -264,12 +264,14 @@ class HistoryWidget(QWidget):
             self._items.append(widget)
             self._container_layout.insertWidget(self._container_layout.count() - 1, widget)
 
+        # При перезагрузке истории сохраняем активный локальный фильтр,
+        # иначе видимая выдача «мигает» обратно на полный список,
+        # пока пользователь не изменит текст поиска.
+        self._on_search(self._search_edit.text())
+
     def _on_search(self, query: str) -> None:
-        q = query.lower()
         for item in self._items:
-            title_match = q in (item._entry.playlist_title or item._entry.title).lower()
-            url_match = q in item._entry.url.lower()
-            item.setVisible(not q or title_match or url_match)
+            item.setVisible(history_entry_matches_query(item._entry, query))
 
     def update_icons(self) -> None:
         """Обновляет иконки при смене темы."""

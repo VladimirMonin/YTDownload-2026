@@ -10,23 +10,19 @@
 from __future__ import annotations
 
 import logging
-import re
-from pathlib import Path
 from typing import Any
+
+from src.application.dto import serialize_for_transport
 
 logger = logging.getLogger(__name__)
 
-# Лимит на очищенный текст (после удаления таймкодов/тегов)
-# Raw VTT обычно в 3-4x больше чистого текста — читаем файл целиком
-_MAX_CHARS = 1_000_000  # 1 млн символов ~ 1 MB чистого текста
 
-
-def create_get_transcript_tool(mcp: Any, history_repo: Any) -> None:
+def create_get_transcript_tool(mcp: Any, api: Any) -> None:
     """Регистрирует инструмент get_transcript в FastMCP.
 
     Args:
         mcp: Экземпляр FastMCP.
-        history_repo: IHistoryRepository.
+        api: Shared application API.
     """
 
     @mcp.tool()
@@ -37,6 +33,8 @@ def create_get_transcript_tool(mcp: Any, history_repo: Any) -> None:
         timestamps: bool = False,
     ) -> dict:
         """Read subtitle/transcript file content for a downloaded video.
+
+        CLI PARITY: `ytdl history transcript <id> [--lang ... --timestamps --raw]`
 
         USE THIS TOOL WHEN:
         - User wants to read what was said in a video (transcript)
@@ -105,249 +103,18 @@ def create_get_transcript_tool(mcp: Any, history_repo: Any) -> None:
             Returns {"error": ..., "hint": ...} if not found or no subtitles.
         """
         try:
-            entry = history_repo.get_by_id(id)
-            if entry is None:
-                return {
-                    "error": f"Download #{id} not found",
-                    "hint": "Use list_downloads() to see valid IDs",
-                }
-
-            subtitle_paths: list[Path] = [
-                Path(p) for p in (entry.subtitle_paths or []) if p and Path(p).exists()
-            ]
-
-            if not subtitle_paths:
-                return {
-                    "id": id,
-                    "title": entry.playlist_title or entry.title or "",
-                    "transcript_path": None,
-                    "transcript_text": None,
-                    "lang_detected": None,
-                    "format": None,
-                    "truncated": False,
-                    "available_langs": [],
-                    "hint": (
-                        "No subtitle files found for this download. "
-                        "Re-download with save_subtitles=True to get them."
-                    ),
-                }
-
-            # Определяем доступные языки
-            available_langs = [_extract_lang(p) for p in subtitle_paths]
-
-            # Выбираем нужный файл
-            chosen: Path | None = None
-            if lang:
-                lang_lower = lang.lower().strip()
-                for p in subtitle_paths:
-                    if lang_lower in p.name.lower():
-                        chosen = p
-                        break
-                if chosen is None:
-                    return {
-                        "error": f"No subtitle file found for language '{lang}'",
-                        "hint": f"Available languages: {', '.join(available_langs)}",
-                        "available_langs": available_langs,
-                        "id": id,
-                    }
-            else:
-                chosen = subtitle_paths[0]
-
-            # Читаем файл целиком — лимит применяем ПОСЛЕ очистки
-            # (raw VTT ~3-4x больше чистого текста по объёму)
-            content = chosen.read_text(encoding="utf-8", errors="replace")
-
-            fmt = "srt" if chosen.suffix.lower() == ".srt" else "vtt"
-            lang_detected = _extract_lang(chosen)
-
-            if raw:
-                text = content
-            elif timestamps:
-                text = _clean_subtitle_text_with_timestamps(content, fmt)
-            else:
-                text = _clean_subtitle_text(content, fmt)
-
-            # Обрезаем если текст превышает лимит
-            truncated = len(text) > _MAX_CHARS
-            if truncated:
-                text = text[:_MAX_CHARS]
-
+            result = serialize_for_transport(
+                api.get_transcript(id, lang=lang, raw=raw, timestamps=timestamps)
+            )
             logger.info(
                 "mcp.get_transcript id=%d lang=%s timestamps=%s text_len=%d",
                 id,
-                lang_detected,
+                result.get("lang_detected"),
                 timestamps,
-                len(text),
+                len(result.get("transcript_text") or ""),
             )
-
-            return {
-                "id": id,
-                "title": entry.playlist_title or entry.title or "",
-                "transcript_path": str(chosen),
-                "transcript_text": text or None,
-                "lang_detected": lang_detected,
-                "format": fmt,
-                "truncated": truncated,
-                "available_langs": available_langs,
-            }
+            return result
 
         except Exception as exc:
             logger.error("mcp.get_transcript.error id=%d", id, exc_info=True)
             return {"error": str(exc), "hint": "Check app logs for details"}
-
-
-def _extract_lang(path: Path) -> str:
-    """Извлекает код языка из имени файла.
-
-    Паттерн: <title>.<lang>.vtt или <title>.<lang>.srt
-    Например: "video.ru.vtt" → "ru", "title.en-orig.vtt" → "en-orig"
-
-    Args:
-        path: Путь к файлу субтитров.
-
-    Returns:
-        Код языка или "unknown".
-    """
-    stem = path.stem  # "video.ru" или "video.en-orig"
-    parts = stem.rsplit(".", 1)
-    if len(parts) == 2:
-        candidate = parts[1]
-        # Проверяем что это похоже на код языка (2-10 символов, только буквы-дефис)
-        if re.match(r"^[a-zA-Z]{2,3}(-[a-zA-Z0-9]+)*$", candidate):
-            return candidate.lower()
-    return "unknown"
-
-
-def _clean_subtitle_text(content: str, fmt: str) -> str:
-    """Преобразует VTT/SRT в читаемый текст без разметки и дублей.
-
-    Args:
-        content: Содержимое файла субтитров.
-        fmt: Формат — "vtt" или "srt".
-
-    Returns:
-        Чистый текст без временных меток, тегов и дублей.
-    """
-    lines = content.splitlines()
-    text_lines: list[str] = []
-    in_header = fmt == "vtt"  # VTT начинается с WEBVTT-заголовка
-
-    # Паттерны для определения служебных строк
-    _timestamp_vtt = re.compile(r"^\d{2}:\d{2}:\d{2}[.,]\d{3}\s*-->\s*\d{2}:\d{2}:\d{2}")
-    _timestamp_srt = re.compile(r"^\d{2}:\d{2}:\d{2},\d{3}\s*-->\s*\d{2}:\d{2}:\d{2}")
-    _index_srt = re.compile(r"^\d+$")
-    _html_tag = re.compile(r"<[^>]+>")
-    _vtt_cue_settings = re.compile(r"^\d{2}:\d{2}.*-->.*(line|align|position|size):")
-
-    for line in lines:
-        stripped = line.strip()
-
-        # Пропускаем VTT заголовок
-        if in_header:
-            if stripped == "" and text_lines == []:
-                in_header = False
-            elif stripped.startswith("WEBVTT"):
-                continue
-            elif stripped.startswith("NOTE") or stripped.startswith("STYLE"):
-                continue
-            continue
-
-        # Пропускаем временные метки
-        if _timestamp_vtt.match(stripped) or _timestamp_srt.match(stripped):
-            continue
-        if _vtt_cue_settings.match(stripped):
-            continue
-
-        # Пропускаем порядковые номера блоков SRT
-        if fmt == "srt" and _index_srt.match(stripped):
-            continue
-
-        # Убираем HTML-теги (<i>, <b>, <c.cyan> и т.п.)
-        clean = _html_tag.sub("", stripped)
-
-        # Убираем специфичные VTT теги типа <00:00:01.000>
-        clean = re.sub(r"<\d+:\d+:\d+\.\d+>", "", clean)
-        clean = clean.strip()
-
-        if not clean:
-            continue
-
-        # Убираем дублирующиеся последовательные строки
-        if text_lines and text_lines[-1] == clean:
-            continue
-
-        text_lines.append(clean)
-
-    return "\n".join(text_lines)
-
-
-def _clean_subtitle_text_with_timestamps(content: str, fmt: str) -> str:
-    """Преобразует VTT/SRT в текст с читаемыми таймкодами [HH:MM:SS].
-
-    Формат вывода:
-        [00:00:01] Привет, сегодня поговорим об ИИ
-        [00:00:05] Как я создал девушку с нуля
-
-    Дублирующиеся последовательные строки объединяются — таймкод берётся
-    от первого вхождения.
-
-    Args:
-        content: Содержимое файла субтитров.
-        fmt: Формат — "vtt" или "srt".
-
-    Returns:
-        Текст с таймкодами [HH:MM:SS] перед каждой уникальной фразой.
-    """
-    lines = content.splitlines()
-    result: list[str] = []
-    in_header = fmt == "vtt"
-    current_time: str | None = None
-    last_clean: str | None = None
-
-    _timestamp_vtt = re.compile(
-        r"^(\d{2}:\d{2}:\d{2})[.,]\d{3}\s*-->\s*\d{2}:\d{2}:\d{2}"
-    )
-    _timestamp_srt = re.compile(
-        r"^(\d{2}:\d{2}:\d{2}),\d{3}\s*-->\s*\d{2}:\d{2}:\d{2}"
-    )
-    _index_srt = re.compile(r"^\d+$")
-    _html_tag = re.compile(r"<[^>]+>")
-    _vtt_cue_settings = re.compile(r"^\d{2}:\d{2}.*-->.*(line|align|position|size):")
-
-    for line in lines:
-        stripped = line.strip()
-
-        # Пропускаем VTT заголовок
-        if in_header:
-            if stripped == "":
-                in_header = False
-            continue
-
-        # Запоминаем таймкод начала блока
-        m = _timestamp_vtt.match(stripped) or _timestamp_srt.match(stripped)
-        if m:
-            current_time = m.group(1)  # "HH:MM:SS"
-            continue
-
-        if _vtt_cue_settings.match(stripped):
-            continue
-
-        if fmt == "srt" and _index_srt.match(stripped):
-            continue
-
-        # Чистим текст
-        clean = _html_tag.sub("", stripped)
-        clean = re.sub(r"<\d+:\d+:\d+\.\d+>", "", clean).strip()
-
-        if not clean:
-            continue
-
-        # Дубликат подряд — пропускаем
-        if last_clean == clean:
-            continue
-
-        last_clean = clean
-        prefix = f"[{current_time}] " if current_time else ""
-        result.append(f"{prefix}{clean}")
-
-    return "\n".join(result)

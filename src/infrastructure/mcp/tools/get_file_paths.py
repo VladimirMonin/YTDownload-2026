@@ -9,22 +9,24 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from ._utils import entry_to_dict_full
+from src.application.dto import serialize_for_transport
 
 logger = logging.getLogger(__name__)
 
 
-def create_get_file_paths_tool(mcp: Any, history_repo: Any) -> None:
+def create_get_file_paths_tool(mcp: Any, api: Any) -> None:
     """Регистрирует инструмент get_file_paths в FastMCP.
 
     Args:
         mcp: Экземпляр FastMCP.
-        history_repo: IHistoryRepository.
+        api: Shared application API.
     """
 
     @mcp.tool()
     def get_file_paths(id: int) -> dict:
         """Get all absolute file paths for a completed download.
+
+        CLI PARITY: `ytdl history file-paths <id>`
 
         USE THIS TOOL WHEN:
         - User asks where a downloaded file is stored
@@ -64,13 +66,7 @@ def create_get_file_paths_tool(mcp: Any, history_repo: Any) -> None:
             Returns {"error": ..., "hint": ...} if ID not found.
         """
         try:
-            entry = history_repo.get_by_id(id)
-            if entry is None:
-                return {
-                    "error": f"Download #{id} not found",
-                    "hint": "Use list_downloads() or search_downloads() to find valid IDs",
-                }
-            result = entry_to_dict_full(entry)
+            result = serialize_for_transport(api.get_file_paths(id))
             logger.info("mcp.get_file_paths id=%d", id)
             return result
         except Exception as exc:

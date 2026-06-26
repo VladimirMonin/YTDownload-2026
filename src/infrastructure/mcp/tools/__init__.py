@@ -23,10 +23,9 @@
 
 from __future__ import annotations
 
-import logging
 from typing import Any
 
-logger = logging.getLogger(__name__)
+from src.infrastructure.mcp.manifest import register_manifest_tools
 
 
 def register_all_tools(mcp: Any, services: dict) -> None:
@@ -37,32 +36,10 @@ def register_all_tools(mcp: Any, services: dict) -> None:
 
     Args:
         mcp: Экземпляр FastMCP.
-        services: Словарь сервисов: history_repo, coordinator.
+        services: Словарь сервисов: application_api и прочие runtime-зависимости.
     """
-    history_repo = services["history_repo"]
-    coordinator = services["coordinator"]
-
-    from .list_downloads import create_list_downloads_tool
-    from .get_download import create_get_download_tool
-    from .search_downloads import create_search_downloads_tool
-    from .get_file_paths import create_get_file_paths_tool
-    from .get_transcript import create_get_transcript_tool
-    from .add_download import create_add_download_tool
-    from .cancel_download import create_cancel_download_tool
-    from .delete_download import create_delete_download_tool
-    from .read_description import create_read_description_tool
-
-    create_list_downloads_tool(mcp, history_repo)
-    create_get_download_tool(mcp, history_repo)
-    create_search_downloads_tool(mcp, history_repo)
-    create_get_file_paths_tool(mcp, history_repo)
-    create_get_transcript_tool(mcp, history_repo)
-    create_add_download_tool(mcp, coordinator)
-    create_cancel_download_tool(mcp, coordinator)
-    create_delete_download_tool(mcp, history_repo)
-    create_read_description_tool(mcp, history_repo)
-
-    logger.info("mcp.tools.registered count=9")
+    application_api = services["application_api"]
+    register_manifest_tools(mcp, application_api)
 
 
 __all__ = ["register_all_tools"]

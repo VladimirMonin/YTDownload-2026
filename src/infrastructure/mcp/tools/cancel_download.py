@@ -9,10 +9,12 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from src.application.command_api import CommandError
+
 logger = logging.getLogger(__name__)
 
 
-def create_cancel_download_tool(mcp: Any, coordinator: Any) -> None:
+def create_cancel_download_tool(mcp: Any, command_api: Any) -> None:
     """Регистрирует инструмент cancel_download в FastMCP.
 
     Args:
@@ -23,6 +25,8 @@ def create_cancel_download_tool(mcp: Any, coordinator: Any) -> None:
     @mcp.tool()
     def cancel_download(id: int, confirm: bool = False) -> dict:
         """Cancel an active or queued download. Requires two-phase confirmation.
+
+        CLI PARITY: `ytdl queue cancel <id> [--confirm]`
 
         USE THIS TOOL WHEN:
         - User asks to stop, cancel, or abort a download
@@ -63,36 +67,24 @@ def create_cancel_download_tool(mcp: Any, coordinator: Any) -> None:
             Returns {"error": ..., "hint": ...} if not found or already terminal.
         """
         try:
-            task = coordinator.get_task(id)
-            if task is None:
-                return {
-                    "error": f"Download #{id} not found or already finished",
-                    "hint": "Use list_downloads() to see active downloads",
-                }
-
-            _status = task.status.value if hasattr(task.status, "value") else str(task.status)
-            if task.status.is_terminal():
-                return {
-                    "error": f"Download #{id} is already {_status}",
-                    "hint": "Can only cancel 'queued' or 'downloading' tasks",
-                }
-
             if not confirm:
+                preview = command_api.prepare_cancel_download(id)
                 return {
                     "confirmation_required": True,
-                    "id": id,
-                    "title": task.title or task.url[:80],
-                    "current_status": _status,
+                    "id": preview.id,
+                    "title": preview.title,
+                    "current_status": preview.current_status,
                     "message": (
-                        f"This will cancel download #{id}: '{task.title or task.url[:60]}'."
+                        f"This will cancel download #{preview.id}: '{preview.title}'."
                         " Call with confirm=True to proceed."
                     ),
                 }
 
-            coordinator.cancel(id)
+            result = command_api.cancel_download(id)
             logger.info("mcp.cancel_download id=%d", id)
-            return {"id": id, "status": "cancel_requested"}
-
+            return {"id": result.id, "status": result.status}
+        except CommandError as exc:
+            return {"error": exc.message, "hint": exc.hint}
         except Exception as exc:
             logger.error("mcp.cancel_download.error id=%d", id, exc_info=True)
             return {"error": str(exc), "hint": "Check app logs for details"}

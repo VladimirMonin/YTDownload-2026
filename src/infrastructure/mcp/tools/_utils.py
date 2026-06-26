@@ -1,8 +1,13 @@
-"""Общие утилиты для MCP инструментов.
+"""Backward-compatible MCP utility serializers.
 
-Функции:
-    entry_to_dict_short: Краткое представление HistoryEntry для списков.
-    entry_to_dict_full: Полное представление HistoryEntry с путями к файлам.
+Historically MCP tools imported ``entry_to_dict_short`` / ``entry_to_dict_full``
+from this module. The shared query refactor moved the canonical transport logic
+into ``src.application.history_queries`` and briefly replaced these callables with
+broken re-exports to non-existent names.
+
+Keep this shim importable and preserve the legacy dict shape so older call sites
+and approval/review flows can still import the helpers directly while the new
+CLI/MCP stack reuses transport-neutral DTOs elsewhere.
 """
 
 from __future__ import annotations
@@ -10,43 +15,26 @@ from __future__ import annotations
 from typing import Any
 
 
-def _ev(v: Any) -> Any:
-    """Безопасно извлекает .value из enum или возвращает строку.
-
-    Нужно потому что PySide6 QVariant иногда стрипает str-enum в plain str.
-    Готово к будущей миграции на SQLite/PeeWee (там тоже нужна нормализация).
-
-    Args:
-        v: Значение (enum или строка).
-
-    Returns:
-        .value если enum, иначе str(v).
-    """
-    return v.value if hasattr(v, "value") else str(v) if v is not None else None
+def _ev(value: Any) -> Any:
+    """Normalize enum-like values while tolerating plain scalars."""
+    return value.value if hasattr(value, "value") else value
 
 
-def _fmt_dt(dt: Any) -> str | None:
-    """Форматирует datetime в ISO-строку или None."""
-    if dt is None:
+def _fmt_dt(value: Any) -> str | None:
+    """Format datetime-like values into the legacy ISO/string transport shape."""
+    if value is None:
         return None
-    if hasattr(dt, "isoformat"):
-        return dt.isoformat()
-    return str(dt)
+    if hasattr(value, "isoformat"):
+        return value.isoformat()
+    return str(value)
 
 
-def entry_to_dict_short(entry: Any) -> dict:
-    """Краткое представление HistoryEntry для списков и поиска.
+def entry_to_dict_short(entry: Any) -> dict[str, Any]:
+    """Legacy short serializer retained for compatibility.
 
-    Содержит только мета-данные без путей к файлам. Готово к SQLite —
-    поля совпадают с тем что будет в таблице downloads.
-
-    Args:
-        entry: HistoryEntry.
-
-    Returns:
-        Словарь с полями: id, url, title, playlist_title, status,
-        quality, download_type, created_at, finished_at.
+    Returns the historical MCP/list/query payload shape without file paths.
     """
+
     return {
         "id": entry.id,
         "url": entry.url,
@@ -56,31 +44,31 @@ def entry_to_dict_short(entry: Any) -> dict:
         "status": _ev(entry.status),
         "quality": _ev(entry.quality),
         "download_type": _ev(entry.download_type),
-        "created_at": _fmt_dt(entry.created_at),
-        "finished_at": _fmt_dt(entry.finished_at),
+        "created_at": _fmt_dt(getattr(entry, "created_at", None)),
+        "finished_at": _fmt_dt(getattr(entry, "finished_at", None)),
         "error_message": entry.error_message or "",
     }
 
 
-def entry_to_dict_full(entry: Any) -> dict:
-    """Полное представление HistoryEntry со всеми путями к файлам.
+def entry_to_dict_full(entry: Any) -> dict[str, Any]:
+    """Legacy full serializer retained for compatibility.
 
-    Args:
-        entry: HistoryEntry.
-
-    Returns:
-        Словарь с полями entry_to_dict_short + все пути к файлам.
+    Extends ``entry_to_dict_short`` with historical file-path fields.
     """
-    d = entry_to_dict_short(entry)
-    d.update(
+
+    payload = entry_to_dict_short(entry)
+    payload.update(
         {
             "video_path": str(entry.video_path) if entry.video_path else None,
             "audio_path": str(entry.audio_path) if entry.audio_path else None,
-            "subtitle_paths": [str(p) for p in (entry.subtitle_paths or [])],
-            "description_path": (str(entry.description_path) if entry.description_path else None),
+            "subtitle_paths": [str(path) for path in (entry.subtitle_paths or [])],
+            "description_path": str(entry.description_path) if entry.description_path else None,
             "thumbnail_path": str(entry.thumbnail_path) if entry.thumbnail_path else None,
             "info_json_path": str(entry.info_json_path) if entry.info_json_path else None,
             "output_dir": str(entry.output_dir) if entry.output_dir else None,
         }
     )
-    return d
+    return payload
+
+
+__all__ = ["entry_to_dict_full", "entry_to_dict_short"]

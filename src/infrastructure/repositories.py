@@ -13,6 +13,8 @@ import threading
 from pathlib import Path
 from typing import Optional
 
+from src.application.history_semantics import history_entry_matches_query
+
 from ..domain.models import AppSettings, HistoryEntry
 from ..domain.protocols import IHistoryRepository, ISettingsRepository
 
@@ -106,12 +108,11 @@ class JsonHistoryRepository(IHistoryRepository):
 
     def search(self, query: str) -> list[HistoryEntry]:
         """Ищет записи по названию или URL (нечувствительно к регистру)."""
-        q = query.lower()
         with self._lock:
             return [
                 e
                 for e in sorted(self._entries.values(), key=lambda x: -x.id)
-                if q in e.title.lower() or q in e.url.lower()
+                if history_entry_matches_query(e, query)
             ]
 
     def delete(self, entry_id: int) -> None:

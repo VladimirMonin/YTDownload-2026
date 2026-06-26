@@ -1,0 +1,1 @@
+"""Utility scripts for offline smoke checks and local diagnostics."""

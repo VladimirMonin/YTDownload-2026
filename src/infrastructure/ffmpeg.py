@@ -34,10 +34,14 @@ def find_executable(
                 return path
 
     bin_dir = vendor_bin or VENDOR_BIN
-    candidates = [
-        bin_dir / f"{name}.exe",
-        bin_dir / name,
-    ]
+    if os.name == "nt":
+        candidates = [
+            bin_dir / f"{name}.exe",
+        ]
+    else:
+        candidates = [
+            bin_dir / name,
+        ]
     for path in candidates:
         if path.exists():
             return path

@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import logging
 import os
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -29,10 +28,12 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from ..application.command_api import CommandError
 from ..application.download_coordinator import DownloadCoordinator
+from ..application.history_semantics import resolve_history_entry_folder
 from ..core.event_bus import EventBus
 from ..domain.models.app_settings import AppSettings
-from ..domain.models.download_task import DownloadTask, DownloadStatus
+from ..domain.models.download_task import DownloadTask
 from ..domain.protocols.history_repository import IHistoryRepository
 from ..domain.protocols.settings_repository import ISettingsRepository
 from .managers import DownloadManager, HistoryManager
@@ -65,10 +66,15 @@ class MainWindow(QMainWindow):
         self._history_repo: IHistoryRepository = services["history_repo"]
         self._coordinator: DownloadCoordinator = services["coordinator"]
         self._event_bus: EventBus = services["event_bus"]
+        self._command_api = services.get("command_api") or services.get("application_api")
 
         # Менеджеры
         self._download_manager = DownloadManager(self._coordinator, self._event_bus)
-        self._history_manager = HistoryManager(self._history_repo, self._event_bus)
+        self._history_manager = HistoryManager(
+            self._history_repo,
+            self._event_bus,
+            command_api=self._command_api,
+        )
 
         # Карточки загрузок: task_id → DownloadItemWidget
         self._item_widgets: dict[int, DownloadItemWidget] = {}
@@ -264,8 +270,8 @@ class MainWindow(QMainWindow):
         self._refresh_history()  # <-- главный поток, безопасно
         # Показываем куда сохранено
         entry = self._history_repo.get_by_id(task_id)
-        path = entry.video_path or entry.audio_path if entry else None
-        folder = str(path.parent) if path else str(self._settings.output_dir)
+        folder_path = resolve_history_entry_folder(entry) if entry else None
+        folder = str(folder_path) if folder_path else str(self._settings.output_dir)
         self._status_bar.showMessage(
             self.tr("Загрузка #%1 готова → %2").replace("%1", str(task_id)).replace("%2", folder),
             10000,
@@ -336,26 +342,18 @@ class MainWindow(QMainWindow):
             entry_id: ID записи.
             delete_files: Удалить файлы с диска вместе с записью.
         """
-        if delete_files:
-            entry = self._history_repo.get_by_id(entry_id)
-            if entry:
-                folder = (
-                    entry.output_dir
-                    or (entry.video_path.parent if entry.video_path else None)
-                    or (entry.audio_path.parent if entry.audio_path else None)
-                )
-                if folder and folder.exists():
-                    try:
-                        shutil.rmtree(folder)
-                        logger.info(
-                            "ui.history_delete.files_removed id=%d path=%s", entry_id, folder
-                        )
-                    except Exception:
-                        logger.error(
-                            "ui.history_delete.files_failed id=%d", entry_id, exc_info=True
-                        )
+        try:
+            self._history_manager.delete(entry_id, delete_files=delete_files)
+        except CommandError as exc:
+            self._status_bar.showMessage(exc.message, 8000)
+            logger.warning(
+                "ui.history_delete.rejected id=%d delete_files=%s hint=%s",
+                entry_id,
+                delete_files,
+                exc.hint,
+            )
+            return
 
-        self._history_manager.delete(entry_id)
         self._refresh_history()
         logger.info("ui.history_delete id=%d delete_files=%s", entry_id, delete_files)
 

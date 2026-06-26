@@ -5,20 +5,8 @@ from __future__ import annotations
 import anyio
 
 from main import initialize_app
+from scripts.mcp_expected_tools import EXPECTED_TOOLS, MCP_TOOL_COUNT
 from src.infrastructure.mcp.server import create_mcp_server
-
-EXPECTED_TOOLS = {
-    "add_download",
-    "cancel_download",
-    "delete_download",
-    "get_download",
-    "get_file_paths",
-    "get_transcript",
-    "list_downloads",
-    "read_description",
-    "search_downloads",
-    "search_with_description",
-}
 
 
 async def _main() -> None:
@@ -26,9 +14,15 @@ async def _main() -> None:
     tools = await mcp.list_tools()
     names = {tool.name for tool in tools}
     missing = EXPECTED_TOOLS - names
-    if missing:
-        raise SystemExit(f"missing MCP tools: {sorted(missing)}")
-    print(f"mcp-smoke ok tools={len(names)}")
+    unexpected = names - EXPECTED_TOOLS
+    if missing or unexpected:
+        details: list[str] = []
+        if missing:
+            details.append(f"missing={sorted(missing)}")
+        if unexpected:
+            details.append(f"unexpected={sorted(unexpected)}")
+        raise SystemExit("mcp-smoke mismatch " + " ".join(details))
+    print(f"mcp-smoke ok tools={len(names)} expected={MCP_TOOL_COUNT}")
 
 
 def main() -> None:

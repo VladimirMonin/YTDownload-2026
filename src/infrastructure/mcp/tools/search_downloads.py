@@ -11,27 +11,25 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 from typing import Any
 
-from ._utils import entry_to_dict_short
+from src.application.dto import serialize_for_transport
 
 logger = logging.getLogger(__name__)
 
-_MAX_DESCRIPTION_BYTES = 8 * 1024  # 8 KB на одно описание в ответе MCP
-
-
-def create_search_downloads_tool(mcp: Any, history_repo: Any) -> None:
+def create_search_downloads_tool(mcp: Any, api: Any) -> None:
     """Регистрирует инструменты поиска в FastMCP.
 
     Args:
         mcp: Экземпляр FastMCP.
-        history_repo: IHistoryRepository.
+        api: Shared application API.
     """
 
     @mcp.tool()
     def search_downloads(query: str, limit: int = 20) -> list[dict] | dict:
         """Search download history by title or URL (case-insensitive substring).
+
+        CLI PARITY: `ytdl history search <query>`
 
         USE THIS TOOL WHEN:
         - User asks to find a specific video/playlist by name
@@ -67,12 +65,7 @@ def create_search_downloads_tool(mcp: Any, history_repo: Any) -> None:
             Returns {"error": ..., "hint": ...} on failure.
         """
         try:
-            limit = max(1, min(limit, 100))
-            if query:
-                entries = history_repo.search(query)[:limit]
-            else:
-                entries = history_repo.get_all()[:limit]
-            result = [entry_to_dict_short(e) for e in entries]
+            result = serialize_for_transport(api.search_downloads(query, limit=limit))
             logger.info("mcp.search_downloads count=%d query_len=%d", len(result), len(query))
             return result
         except Exception as exc:
@@ -82,6 +75,8 @@ def create_search_downloads_tool(mcp: Any, history_repo: Any) -> None:
     @mcp.tool()
     def search_with_description(query: str, limit: int = 10) -> list[dict] | dict:
         """Search downloads and include saved video description text in results.
+
+        CLI PARITY: `ytdl history search <query> --with-description`
 
         USE THIS TOOL WHEN:
         - User wants to find videos by their content (not just title)
@@ -116,20 +111,9 @@ def create_search_downloads_tool(mcp: Any, history_repo: Any) -> None:
             Returns {"error": ..., "hint": ...} on failure.
         """
         try:
-            limit = max(1, min(limit, 30))
-            if query:
-                entries = history_repo.search(query)[:limit]
-            else:
-                entries = history_repo.get_all()[:limit]
-
-            result = []
-            for entry in entries:
-                d = entry_to_dict_short(entry)
-                d["description_text"] = _load_description(entry)
-                d["description_path"] = (
-                    str(entry.description_path) if entry.description_path else None
-                )
-                result.append(d)
+            result = serialize_for_transport(
+                api.search_downloads(query, limit=limit, with_description=True)
+            )
 
             logger.info(
                 "mcp.search_with_description count=%d query_len=%d",
@@ -140,22 +124,3 @@ def create_search_downloads_tool(mcp: Any, history_repo: Any) -> None:
         except Exception as exc:
             logger.error("mcp.search_with_description.error", exc_info=True)
             return {"error": str(exc), "hint": "Check app logs for details"}
-
-
-def _load_description(entry: Any) -> str | None:
-    """Читает текст .description файла для записи.
-
-    Args:
-        entry: HistoryEntry.
-
-    Returns:
-        Текст описания (обрезанный до 8 KB) или None если файла нет.
-    """
-    try:
-        path: Path | None = entry.description_path
-        if path is None or not Path(path).exists():
-            return None
-        text = Path(path).read_bytes()[:_MAX_DESCRIPTION_BYTES].decode("utf-8", errors="replace")
-        return text.strip() or None
-    except Exception:
-        return None

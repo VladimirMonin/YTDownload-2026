@@ -10,16 +10,14 @@
 from __future__ import annotations
 
 import logging
-import shutil
-from pathlib import Path
 from typing import Any
 
-from ._utils import entry_to_dict_short
+from src.application.command_api import CommandError
 
 logger = logging.getLogger(__name__)
 
 
-def create_delete_download_tool(mcp: Any, history_repo: Any) -> None:
+def create_delete_download_tool(mcp: Any, command_api: Any) -> None:
     """Регистрирует инструмент delete_download в FastMCP.
 
     Args:
@@ -34,6 +32,8 @@ def create_delete_download_tool(mcp: Any, history_repo: Any) -> None:
         confirm: bool = False,
     ) -> dict:
         """Delete a download entry from history, optionally removing files from disk.
+
+        CLI PARITY: `ytdl history delete <id> [--keep-files|--delete-files] [--confirm]`
 
         USE THIS TOOL WHEN:
         - User asks to delete, remove, or clean up a download
@@ -84,102 +84,60 @@ def create_delete_download_tool(mcp: Any, history_repo: Any) -> None:
             Returns {"error": ..., "hint": ...} if not found.
         """
         try:
-            entry = history_repo.get_by_id(id)
-            if entry is None:
-                return {
-                    "error": f"Download #{id} not found",
-                    "hint": "Use list_downloads() to see valid IDs",
-                }
-
-            # Определяем папку для удаления
-            folder = _resolve_folder(entry)
-            file_count = _count_files(folder) if folder else 0
-
             if not confirm:
-                # Фаза 1: показываем превью, ничего не делаем
+                preview = command_api.prepare_delete_download(id, delete_files=delete_files)
                 return {
                     "confirmation_required": True,
-                    "id": id,
-                    "title": entry.playlist_title or entry.title or entry.url[:80],
-                    "output_dir": str(folder) if folder else None,
-                    "file_count": file_count,
-                    "delete_files": delete_files,
-                    "message": _build_preview_message(id, entry, folder, file_count, delete_files),
+                    "id": preview.id,
+                    "title": preview.title,
+                    "output_dir": preview.output_dir,
+                    "file_count": preview.file_count,
+                    "delete_files": preview.delete_files,
+                    "message": _build_preview_message(
+                        preview.id,
+                        preview.title,
+                        preview.output_dir,
+                        preview.file_count,
+                        preview.delete_files,
+                    ),
                 }
 
-            # Фаза 2: фактическое удаление
-            files_removed = False
-            if delete_files and folder and folder.exists():
-                try:
-                    shutil.rmtree(folder)
-                    files_removed = True
-                    logger.info(
-                        "mcp.delete_download.files_removed id=%d path_len=%d",
-                        id,
-                        len(str(folder)),
-                    )
-                except Exception:
-                    logger.error("mcp.delete_download.rmtree_failed id=%d", id, exc_info=True)
-
-            history_repo.delete(id)
-            logger.info("mcp.delete_download id=%d files_removed=%s", id, files_removed)
+            result = command_api.delete_download(id, delete_files=delete_files)
+            logger.info("mcp.delete_download id=%d files_removed=%s", id, result.files_removed)
 
             return {
-                "id": id,
-                "deleted": True,
-                "files_removed": files_removed,
+                "id": result.id,
+                "deleted": result.deleted,
+                "files_removed": result.files_removed,
                 "message": (
-                    f"Download #{id} removed from history."
-                    + (" Files deleted from disk." if files_removed else " Files kept on disk.")
+                    f"Download #{result.id} removed from history."
+                    + (
+                        " Files deleted from disk."
+                        if result.files_removed
+                        else " Files kept on disk."
+                    )
                 ),
             }
-
+        except CommandError as exc:
+            return {"error": exc.message, "hint": exc.hint}
         except Exception as exc:
             logger.error("mcp.delete_download.error id=%d", id, exc_info=True)
             return {"error": str(exc), "hint": "Check app logs for details"}
 
 
-def _resolve_folder(entry: Any) -> Path | None:
-    """Определяет папку для удаления с диска.
-
-    Приоритет: output_dir (папка плейлиста/видео) → папка video_path → папка audio_path.
-    Готово к SQLite: поля те же, просто другой источник данных.
-    """
-    if entry.output_dir:
-        p = Path(entry.output_dir)
-        if p.exists():
-            return p
-    if entry.video_path:
-        p = Path(entry.video_path).parent
-        if p.exists():
-            return p
-    if entry.audio_path:
-        p = Path(entry.audio_path).parent
-        if p.exists():
-            return p
-    return None
-
-
-def _count_files(folder: Path) -> int:
-    """Считает количество файлов в папке рекурсивно."""
-    try:
-        return sum(1 for _ in folder.rglob("*") if _.is_file())
-    except Exception:
-        return 0
-
-
 def _build_preview_message(
     id: int,
-    entry: Any,
-    folder: Path | None,
+    title: str,
+    output_dir: str | None,
     file_count: int,
     delete_files: bool,
 ) -> str:
-    title = entry.playlist_title or entry.title or entry.url[:60]
     parts = [f"Will delete download #{id}: '{title}'."]
     if delete_files:
-        if folder:
-            parts.append(f"Will also remove folder '{folder}' with {file_count} file(s) from disk.")
+        if output_dir:
+            parts.append(
+                f"Will also remove folder '{output_dir}' with {file_count} file(s) from disk."
+            )
         else:
             parts.append("No files found on disk to remove.")
     else:

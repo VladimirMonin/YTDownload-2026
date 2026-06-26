@@ -10,13 +10,15 @@ import logging
 import os
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
+from typing import TextIO, cast
 
 
-def setup_logging(log_dir: Path | None = None) -> None:
+def setup_logging(log_dir: Path | None = None, stream: TextIO | None = None) -> None:
     """Настраивает логирование с ротацией файлов.
 
     Args:
         log_dir: Директория для файлов логов. По умолчанию — рядом с app.py.
+        stream: Поток для консольных логов. По умолчанию — sys.stdout.
     """
     level_str = os.environ.get("YTDL_LOG_LEVEL", "INFO").upper()
     level = getattr(logging, level_str, logging.INFO)
@@ -33,11 +35,16 @@ def setup_logging(log_dir: Path | None = None) -> None:
     # StreamHandler с явной кодировкой — иначе на Windows cp1251 → кириллица в \xNN
     import sys
 
-    stream_handler = logging.StreamHandler(stream=sys.stdout)
+    if stream is None:
+        stream = sys.stdout
+
+    stream_handler = logging.StreamHandler(stream=stream)
     try:
         # Python 3.9+ поддерживает reconfigure
-        if hasattr(sys.stdout, "reconfigure"):
-            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            cast(object, reconfigure)
+            reconfigure(encoding="utf-8", errors="replace")
     except Exception:
         pass
     handlers: list[logging.Handler] = [stream_handler]

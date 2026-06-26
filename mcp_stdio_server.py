@@ -8,24 +8,12 @@ Hermes can auto-discover the tools at startup.
 
 from __future__ import annotations
 
-from pathlib import Path
-
-from main import initialize_app
-from src.core.logging_setup import setup_logging
-from src.infrastructure.mcp.server import create_mcp_server
-
-PROJECT_ROOT = Path(__file__).resolve().parent
+from src.interfaces.cli import main as cli_main
 
 
 def main() -> None:
     """Run the YTDownload MCP server over stdio."""
-    import os
-
-    os.chdir(PROJECT_ROOT)
-    setup_logging()
-    services = initialize_app()
-    mcp = create_mcp_server(services)
-    mcp.run(transport="stdio", show_banner=False)
+    raise SystemExit(cli_main(["server", "stdio"]))
 
 
 if __name__ == "__main__":
