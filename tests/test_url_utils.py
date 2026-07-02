@@ -7,8 +7,6 @@
     - Валидация URL
 """
 
-import pytest
-
 from src.infrastructure.url_utils import is_valid_youtube_url, parse_youtube_url
 
 

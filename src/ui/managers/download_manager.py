@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING
 from PySide6.QtCore import QObject, Signal
 
 from ...core.event_bus import EventBus
-from ...domain.models.download_task import DownloadStatus
 
 if TYPE_CHECKING:
     from ...application.download_coordinator import DownloadCoordinator
