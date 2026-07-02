@@ -6,6 +6,8 @@
 
 from __future__ import annotations
 
+import re
+
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QHBoxLayout,
@@ -15,6 +17,12 @@ from PySide6.QtWidgets import (
 )
 
 from ..utils.tabler_icons import TablerIcons, get_icon
+
+# Паттерн YouTube URL
+_YOUTUBE_URL_RE = re.compile(
+    r"^https?://(www\.)?(youtube\.com|youtu\.be|m\.youtube\.com|music\.youtube\.com)/?",
+    re.IGNORECASE,
+)
 
 
 class UrlInputWidget(QWidget):
@@ -55,9 +63,18 @@ class UrlInputWidget(QWidget):
 
     def _on_add(self) -> None:
         url = self._url_edit.text().strip()
-        if url:
-            self.add_requested.emit(url)
-            self._url_edit.clear()
+        if not url:
+            return
+        if not _YOUTUBE_URL_RE.match(url):
+            self._url_edit.setStyleSheet("border: 1px solid #e74c3c;")
+            self._url_edit.setToolTip(
+                self.tr("Вставьте ссылку YouTube (youtube.com или youtu.be)")
+            )
+            return
+        self._url_edit.setStyleSheet("")
+        self._url_edit.setToolTip("")
+        self.add_requested.emit(url)
+        self._url_edit.clear()
 
     def update_icons(self) -> None:
         """Обновляет иконки при смене темы."""

@@ -62,7 +62,7 @@ def initialize_app() -> dict:
         ffmpeg_path=ffmpeg_path,
     )
 
-    logger.info("di.initialized data_dir=%s", data_dir)
+    logger.info("di.initialized ok=True")
 
     application_api = build_application_api(
         {

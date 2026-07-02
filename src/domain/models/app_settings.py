@@ -69,6 +69,7 @@ class AppSettings:
     save_description: bool = True
     save_thumbnail: bool = True
     max_concurrent: int = 2
+    mcp_port: int = 8765
     theme: str = "dark"
 
     def to_dict(self) -> dict:
@@ -83,6 +84,7 @@ class AppSettings:
             "save_description": self.save_description,
             "save_thumbnail": self.save_thumbnail,
             "max_concurrent": self.max_concurrent,
+            "mcp_port": self.mcp_port,
             "theme": self.theme,
         }
 
@@ -108,5 +110,6 @@ class AppSettings:
             save_description=data.get("save_description", True),
             save_thumbnail=data.get("save_thumbnail", True),
             max_concurrent=data.get("max_concurrent", 2),
+            mcp_port=data.get("mcp_port", 8765),
             theme=data.get("theme", "dark"),
         )

@@ -35,6 +35,7 @@ class DownloadManager(QObject):
     task_failed = Signal(int, str)  # task_id, error
     task_cancelled = Signal(int)  # task_id
     task_title_updated = Signal(int, str)  # task_id, title
+    task_title_resolved = Signal(int, str)  # task_id, title (сразу после fetch_info)
 
     def __init__(
         self,
@@ -54,6 +55,7 @@ class DownloadManager(QObject):
         self._event_bus.subscribe("download.done", self._on_done)
         self._event_bus.subscribe("download.failed", self._on_failed)
         self._event_bus.subscribe("download.cancelled", self._on_cancelled)
+        self._event_bus.subscribe("download.title_resolved", self._on_title_resolved)
 
     def cleanup(self) -> None:
         """Отписывается от всех событий."""
@@ -63,6 +65,7 @@ class DownloadManager(QObject):
         self._event_bus.unsubscribe("download.done", self._on_done)
         self._event_bus.unsubscribe("download.failed", self._on_failed)
         self._event_bus.unsubscribe("download.cancelled", self._on_cancelled)
+        self._event_bus.unsubscribe("download.title_resolved", self._on_title_resolved)
 
     def add(
         self,
@@ -120,3 +123,6 @@ class DownloadManager(QObject):
 
     def _on_cancelled(self, task_id: int, **_) -> None:
         self.task_cancelled.emit(task_id)
+
+    def _on_title_resolved(self, task_id: int, title: str, **_) -> None:
+        self.task_title_resolved.emit(task_id, title)

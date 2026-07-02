@@ -31,14 +31,14 @@ class IDownloadService(ABC):
     def download(
         self,
         task: DownloadTask,
-        output_dir: Path,
+        settings: AppSettings,
         progress_callback: Optional[Callable[[float, float, int], None]] = None,
     ) -> dict[str, Optional[Path]]:
         """Скачивает видео согласно заданию.
 
         Args:
             task: Задание на загрузку.
-            output_dir: Корневая папка для сохранения.
+            settings: Настройки приложения (proxy, output_dir и др.).
             progress_callback: Вызывается с (percent, speed_bps, eta_sec).
 
         Returns:

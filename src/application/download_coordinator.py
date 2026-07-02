@@ -32,6 +32,7 @@ class DownloadCoordinator:
     Публикуемые события:
         download.queued(task_id, title, url)
         download.started(task_id)
+        download.title_resolved(task_id, title)
         download.progress(task_id, percent, speed, eta)
         download.done(task_id, entry_id)
         download.failed(task_id, error)
@@ -218,6 +219,14 @@ class DownloadCoordinator:
                 task.title = info.title
                 task.playlist_title = info.playlist_title if info.is_playlist else ""
                 self._update_entry_title(task.id, task.title, task.playlist_title)
+                # Уведомляем UI о полученном заголовке
+                display_title = task.playlist_title or task.title
+                if display_title:
+                    self._event_bus.publish(
+                        "download.title_resolved",
+                        task_id=task.id,
+                        title=display_title,
+                    )
             except Exception:
                 logger.warning("coordinator.fetch_info.skipped id=%d", task.id)
 
@@ -234,10 +243,11 @@ class DownloadCoordinator:
                 )
 
             self._update_task_status(task, DownloadStatus.MERGING)
-            paths = service.download(task, self._settings.output_dir, on_progress)
+            paths = service.download(task, self._settings, on_progress)
             logger.info(
-                "coordinator.files video=%s",
-                paths.get("video") or paths.get("audio") or "?",
+                "coordinator.files has_video=%s has_audio=%s",
+                paths.get("video") is not None,
+                paths.get("audio") is not None,
             )
 
             # Обновляем историю с путями

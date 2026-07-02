@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QMessageBox,
     QPushButton,
     QSpinBox,
     QVBoxLayout,
@@ -136,7 +137,23 @@ class SettingsDialog(QDialog):
         proxy_form.addRow(proxy_hint)
 
         layout.addWidget(proxy_group)
+        # ── MCP сервер ────────────────────────────────────────────
+        mcp_group = QGroupBox(self.tr("MCP сервер"))
+        mcp_form = QFormLayout(mcp_group)
+        mcp_form.setSpacing(8)
 
+        self._mcp_port_spin = QSpinBox()
+        self._mcp_port_spin.setRange(1024, 65535)
+        self._mcp_port_spin.setToolTip(
+            self.tr("Порт для MCP сервера (по умолчанию 8765). Изменение требует перезапуска.")
+        )
+        mcp_form.addRow(self.tr("Порт:"), self._mcp_port_spin)
+
+        mcp_hint = QLabel(self.tr("Изменение порта вступит в силу после перезапуска приложения"))
+        mcp_hint.setObjectName("secondary")
+        mcp_form.addRow(mcp_hint)
+
+        layout.addWidget(mcp_group)
         # ── Интерфейс ─────────────────────────────────────────
         ui_group = QGroupBox(self.tr("Интерфейс"))
         ui_form = QFormLayout(ui_group)
@@ -168,6 +185,7 @@ class SettingsDialog(QDialog):
         self._desc_check.setChecked(s.save_description)
         self._thumb_check.setChecked(s.save_thumbnail)
         self._proxy_edit.setText(s.proxy)
+        self._mcp_port_spin.setValue(s.mcp_port)
         self._set_combo_by_data(self._theme_combo, s.theme)
 
     def _on_browse(self) -> None:
@@ -178,6 +196,19 @@ class SettingsDialog(QDialog):
             self._dir_edit.setText(folder)
 
     def _on_save(self) -> None:
+        # Валидация proxy
+        proxy_text = self._proxy_edit.text().strip()
+        if proxy_text and not self._validate_proxy(proxy_text):
+            QMessageBox.warning(
+                self,
+                self.tr("Некорректный прокси"),
+                self.tr(
+                    "Формат прокси не распознан.\n"
+                    "Ожидается: socks5://host:port или http://[user:pass@]host:port\n\n"
+                    "Настройки будут сохранены, но прокси может не работать."
+                ),
+            )
+
         settings = AppSettings(
             output_dir=Path(self._dir_edit.text().strip() or str(Path.home() / "Downloads")),
             quality=self._quality_combo.currentData(),
@@ -187,11 +218,33 @@ class SettingsDialog(QDialog):
             subtitle_lang=self._lang_combo.currentData(),
             save_description=self._desc_check.isChecked(),
             save_thumbnail=self._thumb_check.isChecked(),
-            proxy=self._proxy_edit.text().strip(),
+            proxy=proxy_text,
+            mcp_port=self._mcp_port_spin.value(),
             theme=self._theme_combo.currentData(),
         )
         self.settings_saved.emit(settings)
         self.accept()
+
+    @staticmethod
+    def _validate_proxy(proxy: str) -> bool:
+        """Проверяет формат прокси-строки.
+
+        Args:
+            proxy: Строка прокси.
+
+        Returns:
+            True если формат распознан.
+        """
+        import re
+
+        pattern = re.compile(
+            r"^(socks[45]|https?|socks5h)://"  # схема
+            r"([^:@]+:[^:@]+@)?"  # опциональный user:pass@
+            r"[\w.\-]+"  # host
+            r"(:\d{1,5})?$",  # опциональный :port
+            re.IGNORECASE,
+        )
+        return bool(pattern.match(proxy))
 
     @staticmethod
     def _set_combo(combo: QComboBox, value: object) -> None:

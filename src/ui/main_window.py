@@ -217,6 +217,7 @@ class MainWindow(QMainWindow):
         self._download_manager.task_failed.connect(self._on_task_failed)
         self._download_manager.task_cancelled.connect(self._on_task_cancelled)
         self._download_manager.task_title_updated.connect(self._on_task_title_updated)
+        self._download_manager.task_title_resolved.connect(self._on_task_title_resolved)
 
         # История — убираем сломанный callback из фонового потока
         self._history_widget.open_folder_requested.connect(self._open_folder)
@@ -298,7 +299,12 @@ class MainWindow(QMainWindow):
 
     def _on_task_title_updated(self, task_id: int, title: str) -> None:
         if task_id in self._item_widgets:
-            self._item_widgets[task_id]._title_label.setText(title)
+            self._item_widgets[task_id].set_title(title)
+
+    def _on_task_title_resolved(self, task_id: int, title: str) -> None:
+        """Title получен из fetch_info — обновляем карточку до начала загрузки."""
+        if task_id in self._item_widgets:
+            self._item_widgets[task_id].set_title(title)
 
     def _on_toggle_theme(self) -> None:
         new_theme = Theme.LIGHT if current_theme() == Theme.DARK else Theme.DARK

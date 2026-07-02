@@ -189,6 +189,15 @@ class DownloadItemWidget(QFrame):
         """Обновляет иконки при смене темы."""
         self._cancel_btn.setIcon(get_icon(TablerIcons.X, size=16))
 
+    def set_title(self, title: str) -> None:
+        """Устанавливает заголовок карточки.
+
+        Args:
+            title: Новый заголовок.
+        """
+        if title:
+            self._title_label.setText(title)
+
     @property
     def task_id(self) -> int:
         return self._task_id

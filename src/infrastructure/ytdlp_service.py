@@ -16,6 +16,7 @@ from ..domain.models import AppSettings, DownloadTask, VideoInfo
 from ..domain.models.app_settings import DownloadType, QualityOption
 from ..domain.protocols import IDownloadService
 from .ffmpeg import find_ffmpeg
+from .url_utils import parse_youtube_url
 
 logger = logging.getLogger(__name__)
 
@@ -98,12 +99,15 @@ class YtDlpService(IDownloadService):
         """
         import yt_dlp  # Локальный импорт — не загрязняем domain
 
+        clean_url, is_playlist = parse_youtube_url(url)
+
         opts = self._base_opts(settings)
         opts["extract_flat"] = "in_playlist"  # Быстрое извлечение для плейлистов
+        opts["noplaylist"] = not is_playlist
 
         try:
             with yt_dlp.YoutubeDL(opts) as ydl:
-                data = ydl.extract_info(url, download=False)
+                data = ydl.extract_info(clean_url, download=False)
                 if data is None:
                     raise ValueError("Failed to extract info")
                 return self._parse_info(data)
@@ -137,14 +141,14 @@ class YtDlpService(IDownloadService):
     def download(
         self,
         task: DownloadTask,
-        output_dir: Path,
+        settings: AppSettings,
         progress_callback: Optional[Callable[[float, float, int], None]] = None,
     ) -> dict[str, Any]:
         """Скачивает видео согласно заданию.
 
         Args:
             task: Задание на загрузку.
-            output_dir: Корневая папка.
+            settings: Настройки приложения (proxy, output_dir и др.).
             progress_callback: Вызывается с (percent, speed_bps, eta_sec).
 
         Returns:
@@ -156,6 +160,8 @@ class YtDlpService(IDownloadService):
         import yt_dlp  # Локальный импорт
 
         self._cancel_event.clear()
+        output_dir = settings.output_dir
+        clean_url, is_playlist = parse_youtube_url(task.url)
 
         # Строим путь вывода
         if task.playlist_title:
@@ -193,13 +199,12 @@ class YtDlpService(IDownloadService):
                     video_folder["path"] = Path(fname).parent
                     logger.info("ytdlp.download.finished ext=%s", Path(fname).suffix)
 
-        opts = {
+        # Настройки yt-dlp — базовые (proxy, ffmpeg) + специфичные для загрузки
+        opts = self._base_opts(settings)
+        opts.update({
             "format": _build_format_string(task),
             "outtmpl": outtmpl,
             "merge_output_format": "mp4" if task.download_type == DownloadType.VIDEO else None,
-            "quiet": True,
-            "noprogress": True,
-            "no_warnings": True,
             "retries": 5,
             "fragment_retries": 5,
             "continuedl": True,
@@ -215,13 +220,10 @@ class YtDlpService(IDownloadService):
             "writedescription": task.save_description,
             "restrictfilenames": False,
             "windowsfilenames": True,
-            "noplaylist": False,
-            "ignoreerrors": True,  # Продолжать при ошибках отдельных видео в плейлисте
+            "noplaylist": not is_playlist,
+            "ignoreerrors": is_playlist,  # Продолжать при ошибках только в плейлисте
             "postprocessors": [],
-        }
-
-        if self._ffmpeg_path:
-            opts["ffmpeg_location"] = str(self._ffmpeg_path.parent)
+        })
 
         # Audio-only постобработчик
         if task.download_type == DownloadType.AUDIO:
@@ -234,16 +236,17 @@ class YtDlpService(IDownloadService):
             )
 
         logger.info(
-            "ytdlp.download.start fmt=%s subs=%s",
+            "ytdlp.download.start fmt=%s subs=%s is_playlist=%s",
             task.download_type.value
             if hasattr(task.download_type, "value")
             else task.download_type,
             task.save_subtitles,
+            is_playlist,
         )
 
         try:
             with yt_dlp.YoutubeDL(opts) as ydl:
-                ydl.download([task.url])
+                ydl.download([clean_url])
         except _CancelledError:
             logger.info("ytdlp.download.cancelled")
             return self._empty_result()
