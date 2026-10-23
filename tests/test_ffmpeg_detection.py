@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
 
@@ -89,13 +91,17 @@ def test_linux_ignores_vendor_exe_and_falls_back_to_path(
     path_bin = tmp_path / "path-bin"
     system_binary = _touch(path_bin / tool_name)
     system_binary.chmod(0o755)
-
+    # Simulate selection, not the host's Windows executable/PATHEXT resolver.
+    resolver = Mock(return_value=str(system_binary))
+    monkeypatch.setattr(ffmpeg_module.shutil, "which", resolver)
     monkeypatch.setattr(ffmpeg_module, "VENDOR_BIN", vendor)
-    monkeypatch.setattr(ffmpeg_module.os, "name", "posix", raising=False)
+    # Do not mutate global os.name: pathlib must keep using the actual host flavour.
+    monkeypatch.setattr(ffmpeg_module, "os", SimpleNamespace(name="posix", getenv=os.getenv))
     monkeypatch.setenv("PATH", str(path_bin))
 
     finder = getattr(ffmpeg_module, finder_name)
     assert finder() == system_binary
+    resolver.assert_called_once_with(tool_name)
 
 
 @pytest.mark.parametrize(("finder_name", "tool_name"), WRAPPER_CASES)

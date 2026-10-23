@@ -7,9 +7,12 @@ and safety notes are present. It does not start servers or touch YouTube.
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 from pathlib import Path
+
+from scripts.smoke_support import isolated_smoke
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
@@ -57,7 +60,7 @@ CASES: tuple[tuple[list[str], tuple[str, ...]], ...] = (
 )
 
 
-def main() -> None:
+def _run_cases() -> None:
     for argv, expected_fragments in CASES:
         result = subprocess.run(
             [sys.executable, "-m", "src.interfaces.cli", *argv],
@@ -65,6 +68,8 @@ def main() -> None:
             capture_output=True,
             text=True,
             check=False,
+            timeout=20,
+            env=os.environ.copy(),
         )
         if result.returncode != 0:
             raise SystemExit(
@@ -82,6 +87,11 @@ def main() -> None:
             )
 
     print(f"cli-help-smoke ok cases={len(CASES)}")
+
+
+def main() -> None:
+    with isolated_smoke():
+        _run_cases()
 
 
 if __name__ == "__main__":

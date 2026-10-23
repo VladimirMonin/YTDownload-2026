@@ -17,14 +17,17 @@ def setup_logging(log_dir: Path | None = None, stream: TextIO | None = None) -> 
     """Настраивает логирование с ротацией файлов.
 
     Args:
-        log_dir: Директория для файлов логов. По умолчанию — рядом с app.py.
+        log_dir: Директория логов. Приоритет: аргумент → YTDL_LOG_DIR → logs рядом с app.py.
         stream: Поток для консольных логов. По умолчанию — sys.stdout.
     """
     level_str = os.environ.get("YTDL_LOG_LEVEL", "INFO").upper()
     level = getattr(logging, level_str, logging.INFO)
 
     if log_dir is None:
-        log_dir = Path(__file__).parent.parent.parent / "logs"
+        env_dir = os.environ.get("YTDL_LOG_DIR")
+        log_dir = (
+            Path(env_dir).expanduser() if env_dir else Path(__file__).parent.parent.parent / "logs"
+        )
     log_dir.mkdir(parents=True, exist_ok=True)
 
     fmt = logging.Formatter(

@@ -4,6 +4,13 @@
 
 **Стек:** Python 3.12+ · PySide6 · yt-dlp · FFmpeg · UV · FastMCP
 
+Разработка: [AGENTS.md](AGENTS.md), [инженерная документация](docs/engineering.md),
+[философия command-first](docs/foundation/project-philosophy.md). Исходный GUI
+сохраняется. Независимо принят только S1 — isolated offline baseline; S2–S6 ещё
+не реализованы/не приняты: [план](docs/command-first/PLAN.md),
+[предлагаемый контракт](docs/command-first/CONTRACT.md),
+[фактическая проверка и ограничения](docs/command-first/VERIFICATION.md).
+
 ---
 
 ## ✨ Возможности
@@ -24,6 +31,10 @@
 ---
 
 ## 🚀 Быстрый старт
+
+Ниже — первоначальная установка **пользователем**, не разрешение агенту запускать
+installers/скачивание/`uv sync`. В существующем окружении разработка и диагностика
+используют `.venv`, `uv run --locked --no-sync` и [правила изоляции](.github/instructions/testing.instructions.md).
 
 ### 1. Установка UV
 
@@ -54,8 +65,8 @@ cd ytdownload-2026
 # Установить зависимости
 uv sync
 
-# Запустить приложение
-uv run python app.py
+# Запустить приложение из готового окружения
+uv run --locked --no-sync python app.py
 ```
 
 > **FFmpeg** нужен для слияния видео+аудио в .mp4.  
@@ -85,35 +96,39 @@ AI-агенты (Claude, Cursor, VS Code Copilot, Cline) могут управл
 **Запуск MCP вместе с приложением:**
 
 ```bash
-uv run python app.py
+uv run --locked --no-sync python app.py
 # MCP доступен на http://127.0.0.1:8765/mcp сразу после старта
 ```
 
 **Автономный запуск MCP сервера (HTTP, без GUI):**
 
 ```bash
-uv run python -m src.infrastructure.mcp.server --host 127.0.0.1 --port 8765
+uv run --locked --no-sync python -m src.infrastructure.mcp.server --host 127.0.0.1 --port 8765
 ```
 
 **Канонический stdio entrypoint для Hermes и других command-based MCP клиентов:**
 
 ```bash
-uv run python -m src.interfaces.cli server stdio
+uv run --locked --no-sync python -m src.interfaces.cli server stdio
 ```
 
-Совместимый wrapper `uv run python mcp_stdio_server.py` сохранён для старых
-скриптов, но просто делегирует в тот же `src.interfaces.cli server stdio` путь.
+Совместимый wrapper `uv run --locked --no-sync python mcp_stdio_server.py` сохранён
+для старых скриптов и делегирует в тот же модуль. Прежняя запись
+`uv run python -m src.interfaces.cli server stdio` обозначает тот же канонический
+путь; для проверки готового окружения используйте locked/no-sync вариант выше.
 
 **Offline stdio MCP parity smoke:**
 
 ```bash
-uv run python scripts/smoke_mcp_stdio.py
+uv run --locked --no-sync python -m scripts.smoke_mcp_stdio
 ```
 
-Скрипт поднимает `uv run python -m src.interfaces.cli server stdio` как реальный
-stdio MCP server и проверяет, что набор инструментов discoverable и совпадает с
-ожидаемым smoke-набором. Это именно `stdio MCP smoke / parity`, а не полный E2E
-сценарий загрузки.
+После назначения собственных synthetic roots реальный MCP client запускает текущий
+interpreter `-m scripts.smoke_mcp_stdio --serve`; child вызывает настоящий CLI
+`main(["server", "stdio"], services=...)` и finally joins свой legacy coordinator.
+Проверяются discovery parity и cleanup receipt с timeout. Это реальный stdio
+protocol boundary, но не tool-effect E2E, не загрузка и не доказательство lifetime
+неизменённого standalone CLI. Детали — [CLI/MCP/GUI](docs/agent-instructions/04-mcp-and-gui.md).
 
 ### Unified CLI / MCP contract
 
@@ -121,19 +136,19 @@ stdio MCP server и проверяет, что набор инструменто
 входные точки:
 
 ```bash
-uv run python -m src.interfaces.cli --help
-uv run python -m src.interfaces.cli queue add <url> --quality 720p
-uv run python -m src.interfaces.cli history list --format json
-uv run python -m src.interfaces.cli server http --host 127.0.0.1 --port 8765
-uv run python -m src.interfaces.cli server stdio
+uv run --locked --no-sync python -m src.interfaces.cli --help
+uv run --locked --no-sync python -m src.interfaces.cli queue add <url> --quality 720p
+uv run --locked --no-sync python -m src.interfaces.cli history list --format json
+uv run --locked --no-sync python -m src.interfaces.cli server http --host 127.0.0.1 --port 8765
+uv run --locked --no-sync python -m src.interfaces.cli server stdio
 ```
 
 Offline validation для этого контракта:
 
 ```bash
-uv run python scripts/smoke_cli_help.py
-uv run python scripts/smoke_mcp.py
-uv run python scripts/smoke_mcp_stdio.py
+uv run --locked --no-sync python -m scripts.smoke_cli_help
+uv run --locked --no-sync python -m scripts.smoke_mcp
+uv run --locked --no-sync python -m scripts.smoke_mcp_stdio
 ```
 
 Эти smoke-проверки доказывают help/registration/discovery parity и не подменяют
@@ -161,11 +176,16 @@ uv run python scripts/smoke_mcp_stdio.py
 
 ### Что именно проверяют smoke-скрипты
 
-- `uv run python scripts/smoke_cli_help.py` — offline CLI help smoke: проверяет корневой command tree, queue/history/server help и явные safety notes/примеры unified CLI surface.
-- `uv run python scripts/smoke_mcp.py` — offline tool-discovery smoke: проверяет, что `create_mcp_server(initialize_app())` регистрирует ожидаемые 10 инструментов.
-- `uv run python -m src.interfaces.cli server stdio` — канонический stdio entrypoint для Hermes/native MCP клиентов; совместимый `mcp_stdio_server.py` просто делегирует сюда.
-- `uv run python scripts/smoke_mcp_stdio.py` — offline stdio parity smoke поверх реального stdio MCP client/server boundary; он проверяет discoverable tool set, но не является полноценной end-to-end проверкой stdio-сессии.
-- `uv run python scripts/smoke_gui.py` — GUI initialization smoke; подтверждает инициализацию приложения, но не доказывает полный интерактивный GUI workflow.
+- `uv run --locked --no-sync python -m scripts.smoke_cli_help` — пять help cases, не выполнение команд загрузки.
+- `uv run --locked --no-sync python -m scripts.smoke_mcp` — регистрация/discovery ожидаемых 10 инструментов; HTTP не запускается.
+- `uv run --locked --no-sync python -m src.interfaces.cli server stdio` — действующий canonical server entrypoint, сам по себе не smoke и не доказанный S1 runtime shutdown.
+- `uv run --locked --no-sync python -m scripts.smoke_mcp_stdio` — настоящий client/child protocol discovery с изоляцией и cleanup, не tool effects.
+- `uv run --locked --no-sync python -m scripts.smoke_gui` — offscreen window/show/events/close, не полный интерактивный workflow и не HTTP lifecycle `app.py`.
+
+Выполнять из корня после [pre-process isolation](.github/instructions/testing.instructions.md).
+Smokes выделяют ещё более узкий owned subtree; synthetic файлы сохраняются. Их
+временный private executor cleanup не заменяет будущий public ApplicationRuntime.
+Общая библиотека также не означает общую живую очередь разных процессов.
 
 ### Opt-in real validation gates
 
@@ -272,6 +292,9 @@ output_dir/                         # Настраивается в Settings
 
 ## 🏗️ Архитектура
 
+Ниже — направление разделения ответственности, не заявление о завершённой
+независимости ядра. Существующие обходы API и целевые owners описаны в [PLAN](docs/command-first/PLAN.md).
+
 ```
 ┌─────────────────────────────────────────────────────┐
 │ UI: PySide6 Widgets · Qt Signals · Thread-safe      │
@@ -290,28 +313,26 @@ output_dir/                         # Настраивается в Settings
 - **Protocol-based DI** — зависимости через ABC/Protocol
 - **Thread-safe signals** — Qt Signal Bridge из EventBus  
 - **MCP в отдельном thread** — asyncio не блокирует Qt event loop
-- **Готово к SQLite** — `IHistoryRepository` легко заменяется на PeeWee
+- **Repository port** — хранение отделяется интерфейсом; миграция в SQLite/PeeWee не входит в текущую задачу и не проверена.
 
 ---
 
 ## 🛠️ Разработка
 
+В готовой `.venv`, после назначения собственных home/storage/temp/cache/log roots
+**до collection/import** по [инструкции тестирования](.github/instructions/testing.instructions.md):
+
 ```bash
-# Зависимости
-uv sync
-
-# Тесты (без E2E — без сети)
-uv run pytest tests/ -m "not e2e" -v
-
-# Тесты с реальными загрузками (нужна сеть)
-uv run pytest tests/ -m e2e -v
-
-# Проверка типов
-uv run mypy src/ --ignore-missing-imports
-
-# Линтер
-uv run ruff check src/ tests/
+uv run --locked --no-sync pytest tests/ -m "not e2e" -q
+uv run --locked --no-sync mypy src/ --ignore-missing-imports
+uv run --locked --no-sync ruff check --select E,F,I <changed-python-files>
 ```
+
+Подставить непустой список изменённых Python-файлов. Полный lint/type baseline
+не равен changed-file gate: в S1 mypy остаётся exit1 с прежними 35 ошибками/16 файлами;
+подробности — [VERIFICATION](docs/command-first/VERIFICATION.md). Live E2E требует
+отдельного явного разрешения с конкретным URL; примеры в руководстве его не дают.
+Изменения только документации требуют affected checks, не автоматического повторения suite.
 
 ---
 
@@ -319,7 +340,8 @@ uv run ruff check src/ tests/
 
 | Переменная | По умолчанию | Описание |
 |------------|-------------|----------|
-| `YTDL_LOG_LEVEL` | `INFO` | Уровень логирования (`DEBUG`/`INFO`/`WARNING`) |
+| `YTDL_LOG_LEVEL` | `INFO` | Уровень логирования (`DEBUG`/`INFO`/`WARNING`); DEBUG не разрешает пользовательское содержимое |
+| `YTDL_LOG_DIR` | `logs/` рядом с проектом | Непустой override для `setup_logging()` без аргумента; явный `log_dir` выше env. GUI `app.py` передаёт свой APPDATA log path |
 | `YTDL_FFMPEG_PATH` | auto-detect | Явный путь к исполняемому `ffmpeg`; без него используется `vendor/ffmpeg/bin` или системный `PATH` |
 | `YTDL_FFPROBE_PATH` | auto-detect | Явный путь к `ffprobe` для тестов и диагностики |
 | `YTDL_FFPLAY_PATH` | auto-detect | Явный путь к `ffplay` для тестов и диагностики |
@@ -334,3 +356,4 @@ uv run ruff check src/ tests/
 | Tabler Icons | MIT | `resources/icons/tabler/LICENSE` |
 | JetBrains Mono | OFL 1.1 | `resources/fonts/OFL.txt` |
 | NotoSans | OFL 1.1 | `resources/fonts/OFL.txt` |
+| Project Foundation Kit 0.3.0 | MIT, включая donor notices ECC/UIZZE | [LICENSE](tools/project-foundation/LICENSE), [UPSTREAM](tools/project-foundation/UPSTREAM.md), [notices](tools/project-foundation/THIRD_PARTY_NOTICES.md) |

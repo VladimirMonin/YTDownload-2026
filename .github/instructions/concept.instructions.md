@@ -6,6 +6,12 @@ description: "Концепция YT Downloader"
 
 # 🎬 YTDownload 2026 — Project Concept
 
+Канонический вход — [AGENTS](../../AGENTS.md), актуальные причины и границы —
+[философия](../../docs/foundation/project-philosophy.md), навигация —
+[инженерная документация](../../docs/engineering.md). Этот исторический обзор не
+удостоверяет текущую работоспособность. Для FFmpeg действует платформенное
+обнаружение env → vendor → PATH; vendor не единственный допустимый вариант.
+
 **Stack:** Python 3.12+ | PySide6 | yt-dlp | FFmpeg (vendor) | UV | FastMCP
 
 ---
@@ -21,7 +27,7 @@ src/
 ├── infrastructure/ # yt-dlp wrapper, FFmpeg checker, JSON repos, MCP server
 │   └── mcp/
 │       ├── server.py        # FastMCP + uvicorn в отдельном thread
-│       └── tools/           # 9 инструментов, каждый в отдельном модуле (SRP)
+│       └── tools/           # имена/количество определяет manifest.py
 │           ├── _utils.py
 │           ├── list_downloads.py
 │           ├── get_download.py
@@ -32,7 +38,8 @@ src/
 │           ├── add_download.py
 │           ├── cancel_download.py
 │           └── delete_download.py
-├── application/    # DownloadCoordinator (оркестрация загрузок)
+├── application/    # ApplicationAPI, команды/запросы, DTO, DownloadCoordinator
+├── interfaces/cli/ # CLI и общий bootstrap CLI/MCP
 └── ui/             # PySide6 GUI
     ├── managers/   # DownloadManager, HistoryManager
     ├── widgets/    # UrlInputWidget, DownloadItemWidget, HistoryWidget,
@@ -68,7 +75,7 @@ vendor/
 - **Protocol-based** — интерфейсы через ABC/Protocol
 - **Event-driven** — EventBus для cross-layer коммуникации
 - **Dependency Injection** — через конструкторы (main.py = DI Container)
-- **Thin Orchestrator** — MainWindow ≤ 400 строк, только shell + wiring
+- **Thin Orchestrator** — MainWindow отвечает за shell + wiring; число строк само по себе не доказывает разделение ответственности. Текущие обходы API и план миграции перечислены в [PLAN](../../docs/command-first/PLAN.md).
 
 ---
 
@@ -136,12 +143,12 @@ output_dir/
 
 ## 📖 Agent Workflow
 
-1. Читай `concept.instructions.md` перед любой работой
+1. Начинай с [AGENTS](../../AGENTS.md), затем читай относящиеся инструкции; этот обзор не заменяет канонический вход.
 2. Domain layer — без PySide6 и network импортов
 3. Qt Signals только в UI layer (QObject)
 4. EventBus в Core, Qt Signals только в UI
 5. Context7 для библиотек API
-6. FFmpeg находится в `vendor/ffmpeg/bin/` — используй оттуда
+6. FFmpeg обнаруживается через `src.infrastructure.ffmpeg`; см. environment instructions.
 
 ---
 

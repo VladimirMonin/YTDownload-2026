@@ -1,0 +1,25 @@
+{
+  "authoring": [
+    "docs/foundation/project-philosophy.md",
+    "docs/engineering.md",
+    "docs/agent-team.md",
+    "docs/command-first/PLAN.md",
+    "docs/command-first/CONTRACT.md",
+    "docs/command-first/VERIFICATION.md"
+  ],
+  "native": [
+    "AGENTS.md",
+    "README.md",
+    "docs/README.md",
+    "docs/agent-instructions/01-project-overview.md",
+    "docs/agent-instructions/02-environment-and-dependencies.md",
+    "docs/agent-instructions/03-download-testing.md",
+    "docs/agent-instructions/04-mcp-and-gui.md",
+    "docs/agent-instructions/05-quality-gates.md",
+    "docs/cli_mcp_unification_plan.md",
+    ".github/instructions/concept.instructions.md",
+    ".github/instructions/testing.instructions.md",
+    ".github/instructions/logging.instructions.md"
+  ],
+  "templates": []
+}

@@ -1,36 +1,46 @@
 # AGENTS.md — YTDownload 2026
 
-This is the required entry point for AI agents working in this repository.
+Обязательная точка входа для всех агентов. Рабочий проект — корень этого репозитория, не каталог методического пакета.
 
-## Read first
+## Сначала прочитать
 
-Before making changes, read these project instructions:
+1. [Философия проекта](docs/foundation/project-philosophy.md): command-first, сохранность, проверка, приватность.
+2. [Обзор](docs/agent-instructions/01-project-overview.md) и [окружение](docs/agent-instructions/02-environment-and-dependencies.md).
+3. [Тестирование](.github/instructions/testing.instructions.md), [права на реальные загрузки](docs/agent-instructions/03-download-testing.md), [quality gates](docs/agent-instructions/05-quality-gates.md).
+4. [Логирование](.github/instructions/logging.instructions.md) перед изменением событий/ошибок/выходов; [CLI/MCP/GUI](docs/agent-instructions/04-mcp-and-gui.md) для соответствующих входов.
+5. [Команда Pi](docs/agent-team.md) при агентной разработке. Полная навигация — [docs/engineering.md](docs/engineering.md).
 
-1. `docs/agent-instructions/01-project-overview.md`
-2. `docs/agent-instructions/02-environment-and-dependencies.md`
-3. `docs/agent-instructions/03-download-testing.md`
-4. `docs/agent-instructions/04-mcp-and-gui.md`
-5. `docs/agent-instructions/05-quality-gates.md`
+## Архитектурное правило
 
-## Hard rules
+Сначала независимый Application API и предметные правила; CLI, MCP и GUI — его адаптеры. Ядро не зависит от Qt, CLI-парсера и MCP SDK. Общий код не равен общей живой очереди между процессами. Владелец состояния, время жизни, ошибки, отмена и эффекты определяются явным контрактом, а не названием паттерна.
 
-- Do not commit, push, release, or run destructive git commands without explicit user permission.
-- Do not run real YouTube downloads or network E2E tests unless the user explicitly allows it.
-- Do not print secrets, local tokens, or full user config contents.
-- Prefer `uv` for environment and commands.
-- Keep Linux and Windows behavior separate when working with FFmpeg paths.
-- Do not download vendor binaries, install system packages, or run long background servers without user approval.
-- Treat `uv.lock` and `.gitignore` changes as intentional only after inspecting the diff; do not bundle accidental dependency or ignore-rule churn into an unrelated commit.
-- After touching runtime behavior, run the narrow relevant tests and report what was actually verified.
+В этой задаче GUI не перерабатываем. Сохраняем действующие точки входа и форматы данных; минимальное совместимое подключение к ядру требует регрессионной проверки. Исторический `docs/cli_mcp_unification_plan.md` не источник фактов о текущем коде.
 
-## Common commands
+## Жёсткие границы
+
+- До записи проверить `git status`, ветку и действующих владельцев; чужие изменения не перезаписывать. Рефакторинг — в отдельной ветке после документации и плана Oracle.
+- Coder не stage/commit/push. После независимого ACCEPTED того же среза назначенный Reviewer завершает затронутую документацию/инструкции и является единственным владельцем index/commit/push в `refactor/command-first`. Сохранять только явно принятые пути; проверять parent, содержимое commit и remote ref. Это прямое проектное разрешение не распространяется на main, force, tags, release, изменение remote/visibility или destructive Git.
+- Не выполнять реальные YouTube-загрузки/сетевые E2E без явного разрешения и конкретного URL. Проверки — на собственных синтетических данных, с изоляцией **до** collection/import/config access.
+- Не читать/печатать secrets, токены, `.env`, личные settings/history/logs и загрузки ради диагностики. Не менять рабочие данные. Продуктовые удаления проверяются только в собственных временных деревьях.
+- Не устанавливать/обновлять пакеты, не скачивать vendor binaries, не менять системное ПО и глобальные Pi/Hermes settings без отдельного разрешения. Использовать готовую `.venv` и `uv run --locked --no-sync`.
+- FFmpeg искать штатным модулем с учётом Windows/Linux, не считать `.exe` универсальным путём.
+- Изменения `uv.lock` и `.gitignore` требуют объяснения и отдельного просмотра; случайный churn не включать. Методический `tools/project-foundation/` при обычной разработке read-only.
+- Не оставлять собственные фоновые серверы/потоки после проверки; не закрывать чужие процессы. Предпросмотр и запрос отмены не выдавать за состоявшийся эффект.
+- CLI/MCP stdout оставлять для результата/протокола; диагностику отделять и не логировать пользовательское содержимое.
+
+## Исполнение и завершение
+
+Oracle (`openai-codex/gpt-6-astra`, `xhigh`) составляет полный план/контракт; Coder и независимый Reviewer (`openai-codex/gpt-6.1-sol`, `max`) работают в отдельных постоянных Pi-сессиях. После передачи Hermes — только оркестратор. Обязательные замечания возвращать тому же кодеру, существенные неясности — Oracle. Не подменять независимую приёмку авторскими тестами. После ACCEPTED тот же Reviewer выполняет документационное завершение и разрешённую selective Git-доставку без нового запроса согласия; при rejection не сохраняет отклонённый runtime. Локальная приёмка, commit, push/readback и remote CI — отдельные факты. Подробности — [команда Pi](docs/agent-team.md).
+
+После изменения выполнять адресную регрессию, затем затронутые обязательные проверки. Команды запускаются в изолированной среде по инструкции тестирования:
 
 ```bash
-uv sync
-uv run pytest tests/ -m "not e2e" -q
-uv run ruff check --select E,F,I <changed files>
-uv run python scripts/smoke_mcp.py
-uv run python scripts/smoke_gui.py
+uv run --locked --no-sync pytest tests/ -m "not e2e" -q
+uv run --locked --no-sync ruff check --select E,F,I <changed-python-files>
+uv run --locked --no-sync python -m scripts.smoke_cli_help
+uv run --locked --no-sync python -m scripts.smoke_mcp
+uv run --locked --no-sync python -m scripts.smoke_mcp_stdio
+uv run --locked --no-sync python -m scripts.smoke_gui
 ```
 
-See `docs/agent-instructions/` for the detailed rules.
+`<changed-python-files>` заменяется реальным непустым списком. Наличие команды здесь не утверждение о её сегодняшнем PASS. Полный lint/mypy baseline и новые ошибки различать, не прятать обязательный провал. Актуализировать затронутые контракт/руководство/инструкции. Завершение: что работает, что реально проверено (raw exit и граница подмены), независимый verdict, что NOT_RUN и почему. План, написанный тест и работающий сценарий — разные результаты.

@@ -12,8 +12,6 @@ import json
 import subprocess
 from pathlib import Path
 
-import pytest
-
 from src.infrastructure.ffmpeg import find_ffplay
 
 
@@ -79,7 +77,7 @@ class TestFFmpegVendor:
                 "-t",
                 "1",
                 "-c:v",
-                "libx264",
+                "mpeg4",
                 "-c:a",
                 "aac",
                 "-y",
@@ -89,8 +87,9 @@ class TestFFmpegVendor:
             text=True,
             timeout=30,
         )
-        if result.returncode != 0:
-            pytest.skip(f"Cannot generate test video: {result.stderr[:200]}")
+        assert result.returncode == 0, (
+            f"FFmpeg native_exit={result.returncode}\n{result.stderr}"
+        )
 
         # Проверяем через ffprobe
         probe = subprocess.run(
@@ -101,6 +100,7 @@ class TestFFmpegVendor:
                 "-print_format",
                 "json",
                 "-show_streams",
+                "-show_format",
                 str(test_video),
             ],
             capture_output=True,
@@ -116,6 +116,14 @@ class TestFFmpegVendor:
         assert len(video_streams) == 1
         assert video_streams[0]["width"] == 320
         assert video_streams[0]["height"] == 240
+        assert video_streams[0]["codec_name"] == "mpeg4"
+        audio_streams = [s for s in streams if s.get("codec_type") == "audio"]
+        assert len(audio_streams) == 1
+        assert audio_streams[0]["codec_name"] == "aac"
+        assert audio_streams[0]["sample_rate"] == "44100"
+        assert audio_streams[0]["channels"] == 1
+        assert "mp4" in data["format"]["format_name"].split(",")
+        assert 0.95 <= float(data["format"]["duration"]) <= 1.1
 
 
 class TestFFmpegFfcheckerUtility:
@@ -124,17 +132,15 @@ class TestFFmpegFfcheckerUtility:
     def test_ffmpeg_location_env(self, ffmpeg_path: Path) -> None:
         """YTDL_FFMPEG_PATH должен переопределять путь к ffmpeg."""
         import os
-
-        old = os.environ.get("YTDL_FFMPEG_PATH")
-        os.environ["YTDL_FFMPEG_PATH"] = str(ffmpeg_path)
+        from unittest.mock import patch
 
         from main import initialize_app
 
-        try:
-            services = initialize_app()
-            assert services["coordinator"]._ffmpeg_path == ffmpeg_path
-        finally:
-            if old is None:
-                del os.environ["YTDL_FFMPEG_PATH"]
-            else:
-                os.environ["YTDL_FFMPEG_PATH"] = old
+        services = None
+        with patch.dict(os.environ, {"YTDL_FFMPEG_PATH": str(ffmpeg_path)}):
+            try:
+                services = initialize_app()
+                assert services["coordinator"]._ffmpeg_path == ffmpeg_path
+            finally:
+                if services is not None:
+                    services["coordinator"]._executor.shutdown(wait=True)

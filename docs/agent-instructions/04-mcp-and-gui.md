@@ -2,13 +2,18 @@
 
 ## Common checks
 
-Use the checked-in smoke scripts instead of ad-hoc snippets when possible:
+Use the existing environment from the project root, with pre-process isolation per
+[testing](../../.github/instructions/testing.instructions.md). The checked-in smokes
+allocate a narrower owned subtree before application/Qt/MCP imports; an optional
+`YTDL_SMOKE_ROOT` points to an existing owned parent. They retain synthetic files,
+restore env, close their handlers and join their own legacy coordinator executor.
+This transitional private cleanup is not the future public runtime lifecycle.
 
 ```bash
-uv run python scripts/smoke_cli_help.py
-uv run python scripts/smoke_mcp.py
-uv run python scripts/smoke_mcp_stdio.py
-uv run python scripts/smoke_gui.py
+uv run --locked --no-sync python -m scripts.smoke_cli_help
+uv run --locked --no-sync python -m scripts.smoke_mcp
+uv run --locked --no-sync python -m scripts.smoke_mcp_stdio
+uv run --locked --no-sync python -m scripts.smoke_gui
 ```
 
 `smoke_cli_help.py` covers the unified `src.interfaces.cli` command tree and
@@ -20,7 +25,7 @@ parity. None of these replace real add/cancel/download validation.
 Use Qt offscreen for non-interactive smoke checks. The checked-in script sets this automatically:
 
 ```bash
-QT_QPA_PLATFORM=offscreen uv run python <script>
+QT_QPA_PLATFORM=offscreen uv run --locked --no-sync python -m scripts.smoke_gui
 ```
 
 A useful smoke creates `QApplication`, calls `initialize_app()`, applies the theme, creates `MainWindow`, shows it, processes events, then closes it.
@@ -29,15 +34,9 @@ Do not claim full GUI verification from this smoke alone. It only proves initial
 
 ## MCP smoke
 
-The offline smoke script verifies tool discovery from initialized services:
-
-```python
-from main import initialize_app
-from src.infrastructure.mcp.server import create_mcp_server
-
-mcp = create_mcp_server(initialize_app())
-tools = await mcp.list_tools()
-```
+The offline smoke initializes real services, passes them to `create_mcp_server`,
+checks `list_tools()` with a timeout, then joins its coordinator in `finally`,
+including factory/discovery failures. It does not bind HTTP or invoke download tools.
 
 Expected tools currently include 10 user-facing tools:
 
@@ -64,11 +63,14 @@ This smoke proves tool-registration parity for the shared `create_mcp_server(...
 Hermes native MCP can run the project over stdio via:
 
 ```bash
-uv run python -m src.interfaces.cli server stdio
+uv run --locked --no-sync python -m src.interfaces.cli server stdio
 ```
 
-Compatibility wrapper: `uv run python mcp_stdio_server.py` delegates into the
-same `src.interfaces.cli server stdio` path for older scripts.
+Compatibility wrapper: `uv run --locked --no-sync python mcp_stdio_server.py`
+delegates into the same module path. The earlier spelling
+`uv run python -m src.interfaces.cli server stdio` names that same canonical path;
+for existing-environment checks use the locked/no-sync command above, not an
+implicit environment sync.
 
 The stdio command initializes the same services as the HTTP server and calls
 `mcp.run(transport="stdio", show_banner=False)`.
@@ -78,12 +80,19 @@ Because both transports reuse `create_mcp_server(...)`, keep user-facing tool do
 For an offline parity check against the real stdio boundary, run:
 
 ```bash
-uv run python scripts/smoke_mcp_stdio.py
+uv run --locked --no-sync python -m scripts.smoke_mcp_stdio
 ```
 
-This starts `uv run python -m src.interfaces.cli server stdio` under a real
-stdio MCP client and compares discovered tool names with the checked-in expected
-tool set. Report it as `stdio MCP smoke / parity`, not full E2E.
+The real MCP client starts the current interpreter with
+`-m scripts.smoke_mcp_stdio --serve`, explicitly passing the isolated environment.
+That child creates its own services and calls the real CLI
+`main(["server", "stdio"], services=...)`, joining the legacy coordinator in finally.
+Discovery is bounded (30 s; separate transport cleanup limit 10 s), keep-alive is
+disabled, and an owned cleanup receipt is checked after close. Independent S1
+also observed actual child exits with an outer watchdog, not just that flag.
+Report this as `stdio MCP smoke / parity`, not tool-effect E2E or proof of the
+unchanged standalone CLI's lifetime. Real synthetic tool effects and canonical
+runtime ownership remain S5; [current evidence](../command-first/VERIFICATION.md).
 
 ## Real validation gate
 

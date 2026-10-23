@@ -4,80 +4,58 @@ name: "TestingInstructions"
 description: "Правила написания и запуска тестов"
 ---
 
-# 🧪 Testing Guidelines
+# Тестирование изменения
 
-## Структура тестов
+Каноническая инструкция выбора, изоляции, исполнения и интерпретации тестов. Основание — [философия проекта](../../docs/foundation/project-philosophy.md) и [PFK quality](../../tools/project-foundation/references/quality.md). Конечные обязательные gates — [05-quality-gates](../../docs/agent-instructions/05-quality-gates.md); права на реальную сеть — [03-download-testing](../../docs/agent-instructions/03-download-testing.md).
 
-```
-tests/
-├── downloads/          # Скачанные файлы (gitignored)
-├── conftest.py         # pytest fixtures
-├── test_ytdlp_unit.py  # Unit тесты (без сети)
-├── test_download_e2e.py  # E2E: реальные загрузки
-└── test_ffmpeg.py      # Проверка FFmpeg
-```
+## Выбрать сценарий, а не число тестов
 
----
+1. Назвать наблюдаемый успех, существенный отказ, owner/consumer и сохраняемые данные. Прочитать существующий тест и реальные определения/использования до создания fixture.
+2. Unit проверяет правило. Integration соединяет настоящие owners. Сценарный тест проходит реальный public entry → Application API → эффект/репозиторий → readback, с явной подменой внешнего yt-dlp/сети. Subject и важное соединение не подменяются заранее заготовленным успехом.
+3. До исправления получить baseline; новая регрессия должна показать нужный отказ до реализации. Не удалять имеющийся код ради искусственного RED. После изменения повторить тот же случай, затем затронутые sibling paths. Для структурного refactor допускается исходный зелёный characterization test с честным описанием.
+4. Проверять ошибки, частичный исход, отмену/позднее завершение, повтор без двойного эффекта, сохранность, reopen и следующий запрос там, где применимы. `save.called` слабее повторного чтения, `cancel_requested` не доказательство физической остановки.
 
-## Типы тестов
+## Изоляция до collection и import
 
-### Unit Tests
+- Использовать готовое окружение: `uv run --locked --no-sync`. Не делать `uv sync` и не устанавливать зависимости автоматически. Наличие окружения проверяется до запуска; недостающая зависимость — конкретный blocker, не разрешение скачать её.
+- Прочитать pytest config, `tests/conftest.py`, module-level setup, plugins и bootstrap. `tmp_path` внутри теста не защищает от раннего `initialize_app()` и загрузки рабочих настроек.
+- До запуска процесса назначить явно принадлежащий проверке scratch/diagnostics root; унаследованный `$TMPDIR` сам по себе не доказывает владение. Создать собственные подпапки и перенаправить `APPDATA`/`LOCALAPPDATA`, `HOME`/`USERPROFILE`, `TMP`/`TEMP`/`TMPDIR`, cache и `YTDL_LOG_DIR`. Не менять реальный профиль ОС или глобальные settings.
+- Для offline-запуска задать `UV_OFFLINE=1`, `UV_NO_SYNC=1`, `UV_PYTHON_DOWNLOADS=never`, собственные `UV_CACHE_DIR`/`RUFF_CACHE_DIR`/`MYPY_CACHE_DIR`/`XDG_CACHE_HOME`, `PYTHONDONTWRITEBYTECODE=1`, `QT_QPA_PLATFORM=offscreen`, `FASTMCP_CHECK_FOR_UPDATES=off`, `DO_NOT_TRACK=1`. Сохранить необходимые Windows PATH/SYSTEMROOT/WINDIR/COMSPEC без их полного дампа.
+- Не загружать неаудированные pytest plugins: проверенный S1 runner задаёт `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1` и `PYTEST_ADDOPTS` с `-p pytestqt.plugin -p no:cacheprovider --basetemp=<новый-абсолютный-owned-path>`. Для Windows-строки ADDOPTS использовать `/` либо корректное quoting: pytest разбирает её через shell-like tokenizer; проверить resolved basetemp внутри своего root до запуска. Не переиспользовать старый basetemp ради очистки.
+- Проверить источник `Path.home()`/репозиториев, default output и logging на достигнутом пути. В текущем коде default output — synthetic home/Downloads/YTDownloader либо явный `AppSettings(output_dir=...)`; `YTDL_OUTPUT_DIR` не является продуктовым override. По возможности передавать явные пути/API-параметры; не обещать изоляцию, если код игнорирует выбранный root.
+- Все записи/удаления — только синтетические файлы внутри принадлежащего проверке дерева. Не читать настоящие `.env`, settings/history/logs/downloads для заполнения fixture. Не очищать чужие артефакты и не закрывать чужие процессы.
+- Сразу после acquire регистрировать cleanup/finally, включая частичный setup: executor, future, subscription, client, server, file handler. Результат с оставшимся собственным сервером не закончен. Не ослаблять guards или assertions ради запуска.
 
-- Без сетевых вызовов
-- Мокируем yt-dlp и FFmpeg
-- Для: парсеры, валидаторы, модели, репозитории
+## Команды и границы
 
-### E2E Integration Tests
-
-- **Реальные загрузки** с YouTube
-- Test URL: `https://youtu.be/6BW4lo7f71I` (ролик)
-- Test Playlist: `https://youtube.com/playlist?list=PL6plRXMq5RABbVCM0dn23PTKO13WcXnbf`
-- Проверка через FFmpeg: `ffprobe -v quiet -print_format json -show_streams file.mp4`
-- Тестируем: 1080p, 720p, audio only
-
----
-
-## Правила
-
-1. **Fixtures** для пути к FFmpeg: `PROJECT_ROOT / "vendor" / "ffmpeg" / "bin" / "ffmpeg.exe"`
-2. **E2E тесты** помечать: `@pytest.mark.e2e` + skip без сети
-3. **Downloads** очищать после тестов (или хранить в `tests/downloads/`)
-4. **Проверяй через FFprobe**: контейнер, кодеки, длительность
-
----
-
-## Запуск
+Команды выполнять из корня проекта после назначения изоляции. Их наличие в инструкции — проверенный интерфейс существующих файлов/manifest, не обещание runtime PASS:
 
 ```bash
-# Все тесты кроме e2e
-uv run pytest tests/ -v -m "not e2e"
-
-# Только unit тесты
-uv run pytest tests/test_ytdlp_unit.py -v
-
-# E2E (реальная сеть)
-uv run pytest tests/test_download_e2e.py -v -m e2e
-
-# Все
-uv run pytest tests/ -v
+uv run --locked --no-sync pytest tests/test_ytdlp_unit.py -q
+uv run --locked --no-sync pytest tests/ -m "not e2e" -q
+uv run --locked --no-sync ruff check --select E,F,I <changed-python-files>
+uv run --locked --no-sync mypy src/ --ignore-missing-imports
+uv run --locked --no-sync python -m scripts.smoke_cli_help
+uv run --locked --no-sync python -m scripts.smoke_mcp
+uv run --locked --no-sync python -m scripts.smoke_mcp_stdio
+uv run --locked --no-sync python -m scripts.smoke_gui
 ```
 
----
+Для адресной проверки заменить test path реальным модулем/case; для lint — непустым списком изменённых Python-файлов. `python -m scripts.*` сохраняет корень в module path. Smoke-скрипты назначают ещё более узкие собственные roots до product/Qt/MCP imports; `YTDL_SMOKE_ROOT` может указать существующий owned parent. Synthetic файлы сохраняются. Это не заменяет раннюю изоляцию pytest/его collection. Проверять side effects до исполнения; для changed child/cleanup paths нужен внешний bounded watchdog и проверка фактического выхода своих детей, не только receipt-флага.
 
-## Пример e2e проверки
+- FFmpeg/FFprobe искать через `src.infrastructure.ffmpeg` и существующие fixtures: env → vendor с платформенным именем → PATH. Не hardcode Windows `.exe` для Linux. Если проверяется медиарезультат, читать реальные container/codec/duration через ffprobe, не доверять суффиксу.
+- CLI help smoke доказывает разбор/help, не загрузку. MCP discovery/parity доказывает реестр, не side effect. Реальный stdio tool call с синтетическим хранилищем — отдельная полезная integration boundary.
+- GUI smoke — только offscreen создание/события/закрытие; без `app.py` с долгим event loop и без заявления о полном интерактивном GUI. В текущем refactor он нужен лишь для сохранности совместимого bootstrap, не для переработки интерфейса.
+- Реальные E2E помечены `e2e` и запускаются только с отдельным разрешением и URL. Старые примеры URL не являются разрешением. Полный suite без `-m "not e2e"` по умолчанию запрещён.
 
-```python
-@pytest.mark.e2e
-def test_download_1080p(tmp_path, ffprobe_path):
-    """Скачивает реальное видео и проверяет через ffprobe."""
-    service = YtDlpService(settings_with_1080p)
-    result = service.download("https://youtu.be/6BW4lo7f71I", tmp_path)
-    assert result.success
-    video_file = next(tmp_path.rglob("*.mp4"))
-    info = probe_video(ffprobe_path, video_file)
-    assert info["height"] == 1080
-```
+## Доказательства и завершение
 
----
+Сохранять exact command, cwd, версию/базу, fixture/selection, env overrides без секретов, raw exit и наблюдение. Native exit runner-а фиксировать до formatter/pipe. FAILED, PASSED, SKIPPED, deselected, NOT_RUN, blocked и отменённое различать. Пересекающиеся прогоны не складывать как уникальные тесты.
 
-**Конец Testing Instructions**
+Первый отказ не стирать; отличать дефект приложения от setup/assertion/данных/окружения на основе причины. Старые lint/mypy findings отдельно от новых: baseline должен быть сопоставимым. Ни warning «legacy», ни один passing subset не отменяют новый обязательный провал.
+
+После изменения общего API/владельца состояния/bootstrap выполнять полный offline-suite и затронутые CLI/MCP/совместимые GUI gates. Для локальной правки не повторять весь мир; переиспользовать только evidence с неизменными существенными inputs. Изменённые mapper/fixture/observer требуют affected recheck.
+
+Для логирования нужны одновременно полезный непустой actual output и отсутствие запрещённых synthetic sentinels после flush, по [инструкции логирования](logging.instructions.md). `caplog` и структурная проверка Markdown не заменяют persistent-output proof.
+
+Автор актуализирует контракт/инструкции и освобождает связный кандидат. Независимая приёмка — назначенному Pi Reviewer, не автору. При достаточном результате остановиться; не добавлять бесконечную программу проверок. Эта инструкция не разрешает установку, сеть, выпуск, commit или публикацию.

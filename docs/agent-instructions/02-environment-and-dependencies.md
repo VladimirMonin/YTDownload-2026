@@ -2,14 +2,19 @@
 
 ## Python environment
 
-Use uv:
+The project requires Python 3.12 or newer. Reuse the existing `.venv`; do not create,
+install, update or synchronize environments as a diagnostic shortcut:
 
 ```bash
-uv sync
-uv run python --version
+uv run --locked --no-sync python --version
 ```
 
-The project requires Python 3.12 or newer.
+For tests/imports/smokes, establish owned storage/home/temp/cache/log roots **before**
+the process per [testing](../../.github/instructions/testing.instructions.md), and
+set offline/no-download flags. Keep required OS paths; do not dump credentials or
+user settings. A missing interpreter/dependency is a blocker, not install permission.
+Initial user installation is a separate action: README setup recipes are not an
+agent authorization to run `uv sync`, installers or package managers.
 
 ## FFmpeg policy
 

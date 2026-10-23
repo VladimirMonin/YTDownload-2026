@@ -2,10 +2,12 @@
 
 ## Offline checks
 
-Run by default after code changes:
+Follow the canonical [testing procedure](../../.github/instructions/testing.instructions.md)
+before import/collection; redirect storage/output/logs into owned synthetic roots.
+Run the affected test first; after shared runtime changes run:
 
 ```bash
-uv run pytest tests/ -m "not e2e" -q
+uv run --locked --no-sync pytest tests/ -m "not e2e" -q
 ```
 
 This must not hit YouTube or any external network service.
@@ -27,7 +29,9 @@ For a real download, verify:
 
 ## Recommended small real gate
 
-Use one short or user-provided video and a temporary output directory under `tmp/` or a clearly named diagnostics folder. Do not pollute the user's regular downloads unless requested.
+Only after explicit authorization, use the user-provided URL and an owned temporary
+output directory under the assigned scratch/diagnostics root. Historical example
+URLs are not permission. Do not pollute the user's regular downloads.
 
 ## Reporting
 
