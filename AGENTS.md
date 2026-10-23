@@ -16,6 +16,8 @@
 
 В этой задаче GUI не перерабатываем. Сохраняем действующие точки входа и форматы данных; минимальное совместимое подключение к ядру требует регрессионной проверки. Исторический `docs/cli_mcp_unification_plan.md` не источник фактов о текущем коде.
 
+S1–S4 независимо приняты в ограниченных scope. Удаление в Application API требует matching preview token, обрабатывает только явно записанные файлы через recoverable Trash port и сообщает partial/persistence outcomes; папки не удаляет. Успешная передача token и устранение legacy adapter bypass/lifetime остаются S5, итоговая qualification — S6. Native Trash move/restore не вытекает из capability или synthetic moves. Текущее состояние и пределы — [VERIFICATION](docs/command-first/VERIFICATION.md); нормативные PLAN/CONTRACT сохраняют целевые требования, а не заменяют фактическую приёмку.
+
 ## Жёсткие границы
 
 - До записи проверить `git status`, ветку и действующих владельцев; чужие изменения не перезаписывать. Рефакторинг — в отдельной ветке после документации и плана Oracle.

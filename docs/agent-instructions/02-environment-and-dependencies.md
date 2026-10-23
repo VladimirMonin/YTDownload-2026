@@ -58,6 +58,23 @@ helper additionally overrides it into its own subtree and restores it in finally
 Existing CLI/MCP/GUI entrypoints are not an external Attached client; complete
 read-only/standalone adapter lifetime migration and CLI `--data-dir` remain S5.
 
+## S4 file-effect boundary
+
+`create_runtime` supplies a default lazy `QtFileRemover` in infrastructure. Core
+construction imports no Qt/transport/backend SDK and needs no QApplication;
+actual Trash capability is checked at the effect edge. No new package or
+permanent-delete fallback is used. Read-only preview has no remover/executor.
+
+Use the Application API's explicit preview token with the same ID/delete_files
+mode. Only recorded artifact/legacy paths within checked roots are candidates;
+output_dir/download-<id> is not authority to remove a directory. Old folder-only
+records permit checked keep-files, not a directory scan. Active/unquiesced jobs,
+links/reparse ancestry and shared attribution block file effects. Partial moves
+and failed history save are not rollback or confirmed deletion; read the structured
+result and repreview. Synthetic recoverable moves and installed capability were
+verified; native Trash move/restore remains NOT_RUN. Complete adapter confirmation
+and lifetime wiring remain S5. See [current evidence](../command-first/VERIFICATION.md).
+
 ## FFmpeg policy
 
 FFmpeg is required for merging video and audio and for audio-only extraction.

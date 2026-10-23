@@ -111,6 +111,27 @@ have not yet been migrated to the complete S5 contract. Do not describe shared
 library/services as external attach, or expose the local HTTP endpoint to an
 untrusted network based on this offline smoke evidence.
 
+## S4 deletion versus S5 adapter integration
+
+The Application API independently accepts token-bound preview/apply, exact known
+file moves and truthful partial/persistence results. A preview has no effect;
+apply needs the same ID/mode and `expected_plan=preview.plan_token`. Neither a
+boolean nor the digest authenticates a person. Missing token safely refuses even
+keep-files. No directory cleanup or permanent-delete fallback is allowed.
+
+Current CLI --confirm, MCP confirm and the existing GUI manager call do not yet
+pass this token. The two changed compatibility cases exercise their real shared
+API refusal and preservation, not successful S5 confirmation. CLI return1/safe
+stderr in an injected in-process call is not standalone native exit/lifetime proof.
+Do not add a token bypass, fake success or repository fallback to restore the old
+unsafe expectation. Existing GUI dialog/token callback wiring and removal of
+legacy bypass are S5; layout and controls remain unchanged.
+
+Default lazy QtCore construction/installed capability, native link/junction guards
+and synthetic recoverable OS moves are distinct evidence. Actual native Trash
+move/restore is NOT_RUN, not implied by capability=True. Never enumerate the user's
+bin or use permanent deletion as a diagnostic shortcut. See [verification](../command-first/VERIFICATION.md).
+
 ## Real validation gate
 
 Keep these separate from offline smoke:

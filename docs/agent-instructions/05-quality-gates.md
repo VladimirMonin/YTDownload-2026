@@ -14,6 +14,12 @@ For runtime refactoring (including the command-first migration):
 - If MCP behavior is affected, run an MCP tool-discovery smoke.
 - Shared API/bootstrap changes also require real offline application/adapter behavior,
   not only help/discovery. Inspect actual state/results and relevant failure/cleanup.
+- File-effect changes require useful correctly-tokened real API/repository/file/readback
+  proofs, no-effect preview/refusal, exact scope/preservation, identity staleness,
+  partial move and history-save failure, plus a usable next operation. A success flag
+  without physical recoverable bytes is insufficient. Native Trash capability,
+  synthetic OS-edge moves and actual native move/restore must be reported separately;
+  an unqualified native restore remains NOT_RUN per PLAN S4, never permanent fallback.
 - Run and baseline-attribute `uv run --locked --no-sync mypy src/ --ignore-missing-imports`;
   full-project legacy findings remain visible, new owned type/lint failures require repair.
 - On a bounded repair, preserve the previous verdict/RED and verify unchanged source/assertion/environment applicability before reusing passed checks. Run the named delta regression and affected sibling gates, not full suite/type/foundation replays without new impact. A child smoke exit0 cannot replace competing-store preservation/no-lock and real cleanup evidence.

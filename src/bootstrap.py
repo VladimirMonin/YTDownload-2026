@@ -72,10 +72,13 @@ def create_runtime(
         remover = None
         if not read_only:
             recover_interrupted(history)
-            if file_remover_factory is not None:
-                remover = file_remover_factory()
-                cleanup.callback(remover.close)
-                resources.append(remover)
+            if file_remover_factory is None:
+                from src.infrastructure.file_remover import QtFileRemover
+
+                file_remover_factory = QtFileRemover
+            remover = file_remover_factory()
+            cleanup.callback(remover.close)
+            resources.append(remover)
             # Neither discovery nor default backend SDK is imported for read-only snapshots.
             from src.infrastructure.ffmpeg import find_ffmpeg
 

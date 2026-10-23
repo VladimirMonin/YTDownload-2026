@@ -1,15 +1,11 @@
 from __future__ import annotations
 
 import logging
-import shutil
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from src.application.history_semantics import (
-    resolve_history_entry_folder,
-    resolve_history_entry_title,
-)
+from src.application.dto import DeleteFileDTO
 from src.domain.download_rules import (
     DownloadRuleError,
     normalize_options,
@@ -21,7 +17,9 @@ from src.domain.models.app_settings import DownloadType, QualityOption
 from src.domain.protocols import IHistoryRepository
 
 if TYPE_CHECKING:
+    from src.application.deletion import DeletionPolicy
     from src.application.download_coordinator import DownloadCoordinator
+    from src.domain.protocols.file_remover import IFileRemover
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +78,10 @@ class DeletePreview:
     output_dir: str | None
     file_count: int
     delete_files: bool
+    plan_token: str = ""
+    files: list[DeleteFileDTO] = field(default_factory=list)
+    missing_count: int = 0
+    output_root: str | None = None
 
 
 @dataclass(frozen=True)
@@ -87,16 +89,23 @@ class DeleteResult:
     id: int
     deleted: bool
     files_removed: bool
+    files: list[DeleteFileDTO] = field(default_factory=list)
+    moved_count: int = 0
+    missing_count: int = 0
 
 
 class DownloadCommandAPI:
     """Transport-neutral command layer shared by CLI and MCP."""
 
     def __init__(
-        self, coordinator: DownloadCoordinator, history_repo: IHistoryRepository
+        self, coordinator: DownloadCoordinator | None, history_repo: IHistoryRepository,
+        *, file_remover: IFileRemover | None = None, data_root: Path | None = None,
+        output_root: Path | None = None,
     ) -> None:
         self._coordinator = coordinator
         self._history_repo = history_repo
+        self._file_remover = file_remover
+        self._data_root, self._output_root = data_root, output_root
 
     def queue_add_download(
         self,
@@ -109,6 +118,8 @@ class DownloadCommandAPI:
         save_description: bool | None = False,
         save_thumbnail: bool | None = False,
     ) -> AddDownloadResult:
+        if self._coordinator is None:
+            raise CommandError("A live owner is required", code="OWNER_REQUIRED")
         normalized_url = self._normalize_url(url)
         normalized_quality, normalized_type = self._normalize_add_options(quality, download_type)
 
@@ -136,6 +147,8 @@ class DownloadCommandAPI:
 
     def prepare_cancel_download(self, download_id: int) -> CancelPreview:
         download_id = self._positive_id(download_id)
+        if self._coordinator is None:
+            raise CommandError("A live owner is required", code="OWNER_REQUIRED")
         task = self._coordinator.get_task(download_id)
         if task is None:
             if self._history_repo.get_by_id(download_id) is not None:
@@ -160,6 +173,8 @@ class DownloadCommandAPI:
 
     def cancel_download(self, download_id: int) -> CancelResult:
         download_id = self._positive_id(download_id)
+        if self._coordinator is None:
+            raise CommandError("A live owner is required", code="OWNER_REQUIRED")
         task = self._coordinator.get_task(download_id)
         if task is None:
             if self._history_repo.get_by_id(download_id) is not None:
@@ -174,46 +189,31 @@ class DownloadCommandAPI:
         logger.info("command_api.cancel_download id=%d", download_id)
         return CancelResult(id=download_id, status="cancel_requested")
 
+    def _deletion(self) -> DeletionPolicy:
+        from src.application.deletion import DeletionPolicy
+        from src.application.download_coordinator import DownloadCoordinator
+
+        owner = self._coordinator if isinstance(self._coordinator, DownloadCoordinator) else None
+        return DeletionPolicy(self._history_repo, owner, self._file_remover,
+                              self._data_root, self._output_root)
+
+    @staticmethod
+    def _delete_mode(delete_files: bool) -> bool:
+        if not isinstance(delete_files, bool):
+            raise ValidationError("delete_files must be a boolean")
+        return delete_files
+
     def prepare_delete_download(self, download_id: int, delete_files: bool = True) -> DeletePreview:
-        download_id = self._positive_id(download_id)
-        entry = self._history_repo.get_by_id(download_id)
-        if entry is None:
-            raise NotFoundError(
-                f"Download #{download_id} not found",
-                "Use list_downloads() to see valid IDs",
-            )
-
-        folder = resolve_history_entry_folder(entry)
-        return DeletePreview(
-            id=download_id,
-            title=resolve_history_entry_title(entry),
-            output_dir=str(folder) if folder else None,
-            file_count=_count_files(folder) if folder else 0,
-            delete_files=delete_files,
+        return self._deletion().preview(
+            self._positive_id(download_id), self._delete_mode(delete_files)
         )
 
-    def delete_download(self, download_id: int, delete_files: bool = True) -> DeleteResult:
-        preview = self.prepare_delete_download(download_id, delete_files=delete_files)
-
-        files_removed = False
-        if delete_files and preview.output_dir:
-            folder = Path(preview.output_dir)
-            if folder.exists():
-                shutil.rmtree(folder)
-                files_removed = True
-                logger.info(
-                    "command_api.delete_download.files_removed id=%d path_len=%d",
-                    download_id,
-                    len(str(folder)),
-                )
-
-        self._history_repo.delete(download_id)
-        logger.info(
-            "command_api.delete_download id=%d files_removed=%s",
-            download_id,
-            files_removed,
+    def delete_download(
+        self, download_id: int, delete_files: bool = True, *, expected_plan: str | None = None,
+    ) -> DeleteResult:
+        return self._deletion().apply(
+            self._positive_id(download_id), self._delete_mode(delete_files), expected_plan
         )
-        return DeleteResult(id=download_id, deleted=True, files_removed=files_removed)
 
     @staticmethod
     def _positive_id(download_id: int) -> int:
@@ -245,10 +245,3 @@ def build_command_api(services: dict[str, Any]) -> DownloadCommandAPI:
         coordinator=services["coordinator"],
         history_repo=services["history_repo"],
     )
-
-
-def _count_files(folder: Path) -> int:
-    try:
-        return sum(1 for candidate in folder.rglob("*") if candidate.is_file())
-    except Exception:
-        return 0

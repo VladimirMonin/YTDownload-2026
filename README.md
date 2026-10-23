@@ -6,10 +6,11 @@
 
 Разработка: [AGENTS.md](AGENTS.md), [инженерная документация](docs/engineering.md),
 [философия command-first](docs/foundation/project-philosophy.md). Исходный GUI
-сохраняется. Независимо приняты S1–S3: isolated baseline, runtime/storage,
-cooperative cancellation, truthful outcomes/snapshots и task-ID output attribution.
-S4–S6 (safe delete, complete adapters, final matrix) ещё
-не реализованы/не приняты: [план](docs/command-first/PLAN.md),
+сохраняется. Независимо приняты S1–S4: isolated baseline, runtime/storage,
+cooperative cancellation, truthful outcomes/snapshots, task-ID output attribution
+и ограниченное удаление через Application API. Успешная передача delete token
+в CLI/MCP/GUI и полный lifetime/platform matrix остаются S5–S6:
+[план](docs/command-first/PLAN.md),
 [предлагаемый контракт](docs/command-first/CONTRACT.md),
 [фактическая проверка и ограничения](docs/command-first/VERIFICATION.md).
 
@@ -169,7 +170,7 @@ uv run --locked --no-sync python -m scripts.smoke_mcp_stdio
 | `read_description(id)` | Текст .description файла ролика |
 | `add_download(url, quality?, ...)` | Добавить URL в очередь загрузки |
 | `cancel_download(id, confirm?)` | Отмена активной загрузки (двухфазная) |
-| `delete_download(id, delete_files?, confirm?)` | Удаление из истории + файлы с диска |
+| `delete_download(id, delete_files?, confirm?)` | Предпросмотр; текущий confirm без plan token безопасно отказывает |
 
 Канонический source of truth для имён/count живёт в
 `src/infrastructure/mcp/manifest.py`; `scripts/mcp_expected_tools.py`,
@@ -339,7 +340,7 @@ uv run --locked --no-sync ruff check --select E,F,I <changed-python-files>
 ```
 
 Подставить непустой список изменённых Python-файлов. Полный lint/type baseline
-не равен changed-file gate: глобальный mypy после S3 остаётся inherited exit1 с 34 унаследованными ошибками/15 файлами;
+не равен changed-file gate: глобальный mypy после S4 остаётся inherited exit1 с теми же 34 ошибками/15 файлами;
 подробности — [VERIFICATION](docs/command-first/VERIFICATION.md). Live E2E требует
 отдельного явного разрешения с конкретным URL; примеры в руководстве его не дают.
 Изменения только документации требуют affected checks, не автоматического повторения suite.
@@ -394,6 +395,39 @@ Unknown progress/speed/eta — None; измеренный0 остаётся0. Se
 ошибки не превращаются в defaults/успех: STORAGE_CORRUPT/PERSISTENCE_FAILED/OWNER_BUSY
 доступны в direct API exceptions; полное transport mapping ещё впереди. Политика и
 границы — [CONTRACT](docs/command-first/CONTRACT.md), [окружение](docs/agent-instructions/02-environment-and-dependencies.md).
+
+## Ограниченное удаление через Application API
+
+В S4 удаление требует явного плана: сначала `prepare_delete_download(id,
+delete_files=...)`, затем после согласия — `delete_download` с теми же id/режимом
+и `expected_plan=preview.plan_token`. Предпросмотр ничего не перемещает и не
+меняет историю; boolean confirm и сам token не удостоверяют человека. Без token
+API возвращает CONFIRMATION_REQUIRED, изменившийся план — STALE_PLAN. После отказа
+или потерянного ответа нужны новый preview и новое согласие, не автоматический retry.
+
+`delete_files=False` удаляет только запись истории. Файловый режим переносит только
+явно записанные media/sidecar paths в системную Корзину: ни каталоги, ни parent,
+ни unlisted/sibling files не удаляются. Одна папка в старой записи не доказывает
+принадлежность файлов (UNSAFE_FILE_SCOPE); доступен keep-files. Небезопасные roots,
+links/junction ancestry, shared paths и незавершённая работа в той же области
+блокируют эффект. Cancel intent ещё не разрешает удалять активную задачу.
+
+При частичном переносе или ошибке сохранения истории возвращается структурированный
+PARTIAL_DELETE/PERSISTENCE_FAILED: известные moved/missing/failed/unknown counts,
+`history_deleted` и `recovery=repreview`. Уже перемещённые bytes не откатываются;
+запись не считается удалённой без подтверждённого save. `files_removed=True` означает
+хотя бы один известный перенос, а не исчезновение папки; при нуле переносов — False.
+
+Default adapter — lazy QtCore Trash без QApplication и без permanent-delete fallback.
+Независимо проверены восстановимые synthetic OS-edge moves, реальная policy/JSON и
+installed capability; **native Trash move/restore остаётся NOT_RUN**, не гарантия
+восстановления на каждом OS/volume. Media+JSON не crash-atomic transaction.
+
+Текущие CLI/MCP/GUI adapters ещё не передают новый token: обычный API-based confirm
+без него отказывает, включая keep-files. Успешная adapter-проводка и удаление
+legacy bypass — S5; ни новый флаг parser, ни общая безопасность всех старых путей
+этим не заявлены. Подробнее — [руководство](docs/README.md#6-история-загрузок) и
+[принятый scope/ограничения](docs/command-first/VERIFICATION.md).
 
 ## 🔧 Переменные окружения
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import subprocess
 import sys
 from pathlib import Path
@@ -9,11 +10,13 @@ from typing import Any, cast
 import pytest
 
 from src.application.command_api import (
+    CommandError,
     ConflictError,
     DownloadCommandAPI,
     NotFoundError,
     ValidationError,
 )
+from src.bootstrap import create_runtime
 from src.domain.models.download_task import DownloadStatus, DownloadTask
 from src.domain.models.history_entry import HistoryEntry
 from src.infrastructure.repositories import JsonHistoryRepository
@@ -125,60 +128,89 @@ def test_cancel_missing_download(tmp_path: Path) -> None:
 
 
 def test_delete_preview_and_confirm_cleanup(tmp_path: Path) -> None:
-    api, _coordinator, repo = make_command_api(tmp_path)
-    output_dir = tmp_path / "download-1"
-    output_dir.mkdir()
-    (output_dir / "video.mp4").write_text("video", encoding="utf-8")
-    (output_dir / "meta.txt").write_text("meta", encoding="utf-8")
-
-    entry = HistoryEntry(
-        id=1,
-        url="https://youtu.be/x",
-        title="Clip",
-        status=DownloadStatus.DONE,
-        output_dir=output_dir,
+    trash = tmp_path / "synthetic-trash"
+    trash.mkdir()
+    class Remover:
+        def move_to_trash(self, path):
+            path.rename(trash / path.name)
+            return True
+        def close(self):
+            pass
+    runtime = create_runtime(
+        tmp_path / "profile", settings_overrides={"output_dir": tmp_path / "output"},
+        file_remover_factory=Remover,
     )
-    repo.add(entry)
-
-    preview = api.prepare_delete_download(1, delete_files=True)
-    result = api.delete_download(1, delete_files=True)
-
-    assert preview.output_dir == str(output_dir)
-    assert preview.file_count == 2
-    assert result.deleted is True
-    assert result.files_removed is True
-    assert not output_dir.exists()
-    assert repo.get_by_id(1) is None
+    try:
+        api, repo = runtime.api, runtime.history_repo
+        output_dir = tmp_path / "output/download-1"
+        output_dir.mkdir(parents=True)
+        video, meta = output_dir / "video.mp4", output_dir / "meta.txt"
+        video.write_text("video", encoding="utf-8")
+        meta.write_text("meta", encoding="utf-8")
+        entry = HistoryEntry(
+            id=1, url="https://youtu.be/x", title="Clip", status=DownloadStatus.DONE,
+            output_root=tmp_path / "output", output_dir=output_dir,
+            video_path=video, artifact_paths=[video, meta],
+        )
+        repo.add(entry)
+        preview = api.prepare_delete_download(1, delete_files=True)
+        result = api.delete_download(1, delete_files=True, expected_plan=preview.plan_token)
+        assert preview.output_dir == str(output_dir)
+        assert preview.file_count == 2
+        assert result.deleted is True
+        assert result.files_removed is True
+        assert output_dir.is_dir()  # S4 deliberately preserves directories, not recursive cleanup.
+        assert not video.exists() and not meta.exists()
+        assert (trash / "video.mp4").read_text(encoding="utf-8") == "video"
+        assert (trash / "meta.txt").read_text(encoding="utf-8") == "meta"
+        assert repo.get_by_id(1) is None
+        with create_runtime(runtime.data_root, read_only=True) as reader:
+            assert reader.api.list_history_entries() == []
+    finally:
+        assert runtime.close(cancel=False, wait=True).closed
 
 
 def test_delete_keep_files_only_removes_history(tmp_path: Path) -> None:
-    api, _coordinator, repo = make_command_api(tmp_path)
-    output_dir = tmp_path / "download-2"
-    output_dir.mkdir()
-    (output_dir / "audio.m4a").write_text("audio", encoding="utf-8")
-
-    entry = HistoryEntry(
-        id=2,
-        url="https://youtu.be/y",
-        title="Audio",
-        status=DownloadStatus.DONE,
-        output_dir=output_dir,
+    runtime = create_runtime(
+        tmp_path / "profile", settings_overrides={"output_dir": tmp_path / "output"}
     )
-    repo.add(entry)
+    try:
+        api, repo = runtime.api, runtime.history_repo
+        output_dir = tmp_path / "output/download-2"
+        output_dir.mkdir(parents=True)
+        (output_dir / "audio.m4a").write_text("audio", encoding="utf-8")
+        entry = HistoryEntry(
+            id=2, url="https://youtu.be/y", title="Audio", status=DownloadStatus.DONE,
+            output_dir=output_dir,
+        )
+        repo.add(entry)
+        preview = api.prepare_delete_download(2, delete_files=False)
+        result = api.delete_download(2, delete_files=False, expected_plan=preview.plan_token)
+        assert result.deleted is True
+        assert result.files_removed is False
+        assert output_dir.exists()
+        assert (output_dir / "audio.m4a").read_text(encoding="utf-8") == "audio"
+        assert repo.get_by_id(2) is None
+        with create_runtime(runtime.data_root, read_only=True) as reader:
+            assert reader.api.list_history_entries() == []
+    finally:
+        assert runtime.close(cancel=False, wait=True).closed
 
-    result = api.delete_download(2, delete_files=False)
 
-    assert result.deleted is True
-    assert result.files_removed is False
-    assert output_dir.exists()
-    assert repo.get_by_id(2) is None
-
-
-def test_history_manager_delete_uses_shared_command_api(tmp_path: Path) -> None:
-    api, _coordinator, repo = make_command_api(tmp_path)
+def test_history_manager_delete_uses_shared_command_api(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    api, coordinator, repo = make_command_api(tmp_path)
     output_dir = tmp_path / "download-4"
     output_dir.mkdir()
-    (output_dir / "clip.mp4").write_text("clip", encoding="utf-8")
+    media = output_dir / "clip.mp4"
+    media.write_bytes(b"clip")
+    unlisted, sibling, parent_marker = (
+        output_dir / "unlisted.keep", tmp_path / "sibling.keep", tmp_path / "parent.keep"
+    )
+    unlisted.write_bytes(b"unlisted preserve")
+    sibling.write_bytes(b"sibling preserve")
+    parent_marker.write_bytes(b"parent preserve")
     repo.add(
         HistoryEntry(
             id=4,
@@ -188,15 +220,33 @@ def test_history_manager_delete_uses_shared_command_api(tmp_path: Path) -> None:
             output_dir=output_dir,
         )
     )
+    cache_before = repo.get_all()
+    files = (media, unlisted, sibling, parent_marker, tmp_path / "history.json")
+    bytes_before = {path: path.read_bytes() for path in files}
+    real_delete = api.delete_download
+    calls: list[tuple[int, bool, str | None]] = []
+
+    def observe_delete(
+        download_id: int, delete_files: bool = True, *, expected_plan: str | None = None,
+    ) -> Any:
+        calls.append((download_id, delete_files, expected_plan))
+        return real_delete(download_id, delete_files=delete_files, expected_plan=expected_plan)
+
+    monkeypatch.setattr(api, "delete_download", observe_delete)
     manager = HistoryManager(repo, cast(Any, StubEventBus()), command_api=api)
+    with pytest.raises(CommandError) as denied:
+        manager.delete(4, delete_files=True)
 
-    result = manager.delete(4, delete_files=True)
-
-    assert result is not None
-    assert result.deleted is True
-    assert result.files_removed is True
-    assert repo.get_by_id(4) is None
-    assert not output_dir.exists()
+    assert calls == [(4, True, None)]  # Actual shared API, not the legacy repo fallback.
+    assert denied.value.code == "CONFIRMATION_REQUIRED"
+    assert denied.value.result is None
+    assert coordinator.add_calls == [] and coordinator.cancel_calls == []
+    assert repo.get_all() == cache_before
+    assert repo.get_by_id(4) == cache_before[0]
+    assert {path: path.read_bytes() for path in files} == bytes_before
+    reopened = JsonHistoryRepository(tmp_path, read_only=True)
+    assert reopened.get_all() == cache_before and reopened.get_by_id(4) == cache_before[0]
+    assert output_dir.is_dir() and output_dir.parent.is_dir()
 
 
 def test_cli_help_smoke() -> None:
@@ -231,11 +281,19 @@ def test_cli_queue_cancel_preview_json(tmp_path: Path, capsys: pytest.CaptureFix
 def test_cli_history_delete_confirm_json(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    api, _coordinator, repo = make_command_api(tmp_path)
+    api, coordinator, repo = make_command_api(tmp_path)
     output_dir = tmp_path / "download-3"
     output_dir.mkdir()
-    (output_dir / "thumb.webp").write_text("thumb", encoding="utf-8")
+    media = output_dir / "thumb.webp"
+    media.write_bytes(b"thumb")
+    unlisted, sibling, parent_marker = (
+        output_dir / "unlisted.keep", tmp_path / "sibling.keep", tmp_path / "parent.keep"
+    )
+    unlisted.write_bytes(b"unlisted preserve")
+    sibling.write_bytes(b"sibling preserve")
+    parent_marker.write_bytes(b"parent preserve")
     repo.add(
         HistoryEntry(
             id=3,
@@ -245,18 +303,57 @@ def test_cli_history_delete_confirm_json(
             output_dir=output_dir,
         )
     )
+    cache_before = repo.get_all()
+    files = (media, unlisted, sibling, parent_marker, tmp_path / "history.json")
+    bytes_before = {path: path.read_bytes() for path in files}
+    real_delete = api.delete_download
+    calls: list[tuple[int, bool, str | None]] = []
+    failures: list[CommandError] = []
 
-    exit_code = cli_main(
-        ["--json", "history", "delete", "3", "--confirm"],
-        services={"command_api": api, "application_api": api},
-    )
+    def observe_delete(
+        download_id: int, delete_files: bool = True, *, expected_plan: str | None = None,
+    ) -> Any:
+        calls.append((download_id, delete_files, expected_plan))
+        try:
+            return real_delete(download_id, delete_files=delete_files, expected_plan=expected_plan)
+        except CommandError as error:
+            failures.append(error)
+            raise
 
-    captured = capsys.readouterr()
-    payload = json.loads(captured.out)
-    assert exit_code == 0
-    assert payload["deleted"] is True
-    assert payload["files_removed"] is True
-    assert not output_dir.exists()
+    monkeypatch.setattr(api, "delete_download", observe_delete)
+    root = logging.getLogger()
+    previous_handlers, previous_level = root.handlers[:], root.level
+    previous_yt_level = logging.getLogger("yt_dlp").level
+    root.handlers = []  # Preserve borrowed pytest/caller handlers across real CLI setup_logging.
+    try:
+        exit_code = cli_main(
+            ["--json", "history", "delete", "3", "--confirm"],
+            services={"command_api": api, "application_api": api},
+        )
+        captured = capsys.readouterr()
+        assert calls == [(3, True, None)]
+        assert len(failures) == 1 and failures[0].code == "CONFIRMATION_REQUIRED"
+        assert failures[0].result is None
+        assert exit_code == 1 and captured.out == ""
+        assert captured.err.strip()
+        payload = json.loads(captured.err)
+        assert payload == {"error": failures[0].message, "hint": failures[0].hint}
+        assert not {"deleted", "files_removed"} & payload.keys()
+        for sensitive in ("https://youtu.be/delete-me", "Delete me", str(tmp_path), media.name):
+            assert sensitive not in captured.err
+        assert coordinator.add_calls == [] and coordinator.cancel_calls == []
+        assert repo.get_all() == cache_before and repo.get_by_id(3) == cache_before[0]
+        assert {path: path.read_bytes() for path in files} == bytes_before
+        reopened = JsonHistoryRepository(tmp_path, read_only=True)
+        assert reopened.get_all() == cache_before and reopened.get_by_id(3) == cache_before[0]
+        assert output_dir.is_dir() and output_dir.parent.is_dir()
+    finally:
+        for handler in root.handlers:
+            handler.flush()
+            handler.close()
+        root.handlers = previous_handlers
+        root.setLevel(previous_level)
+        logging.getLogger("yt_dlp").setLevel(previous_yt_level)
 
 
 def test_cli_returns_non_zero_on_validation_error(

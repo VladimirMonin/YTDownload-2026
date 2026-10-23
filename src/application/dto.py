@@ -23,6 +23,13 @@ class QueryErrorDTO(_MappingLikeDTO):
 
 
 @dataclass(frozen=True, slots=True)
+class DeleteFileDTO(_MappingLikeDTO):
+    path: str
+    status: str
+    code: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class ShutdownResultDTO(_MappingLikeDTO):
     closed: bool
     pending_task_ids: list[int] = field(default_factory=list)

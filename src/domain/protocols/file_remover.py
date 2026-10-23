@@ -1,9 +1,18 @@
-"""OS file-effect seam. The safe delete policy/adapter are introduced in S4."""
+"""Recoverable OS file-effect seam; no Qt or permanent-delete fallback."""
 
 from pathlib import Path
 from typing import Protocol
 
 from .runtime_resource import RuntimeResource
+
+
+class FileRemovalError(RuntimeError):
+    """Safe refusal/uncertain effect; never carries raw OS error or paths."""
+
+    def __init__(self, *, outcome: str = "failed") -> None:
+        super().__init__("Recoverable move unavailable")
+        self.code = "TRASH_UNAVAILABLE"
+        self.outcome = outcome
 
 
 class IFileRemover(RuntimeResource, Protocol):

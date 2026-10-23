@@ -703,3 +703,231 @@ NOT_RUN/deferred: S4 delete/Trash/token, S5 complete standalone/embedded/GUI ada
 lifetime/tool effects, S6 final matrix; live YouTube/network E2E, codec/FFmpeg media
 quality, Linux/remote CI, packaged EXE/manual visual GUI, full legacy privacy.
 После disposition/delivery S3 следующий срез назначает Hermes; S4 здесь не начат.
+
+# S4 — авторский кандидат, обязательный gate BLOCKED
+
+База: `4aee42352e10c0664f25588303da937c03713200`, ветка
+`refactor/command-first`. Это реализация и авторские наблюдения, **не независимая
+приёмка S4**. Coder не stage/commit/push; S5 wiring не начат. Предшествующий текст
+и исторические отчёты/отказы сохранены, не переименованы в новый PASS.
+
+## Реализованная граница API
+
+- `prepare_delete_download` возвращает detached exact-file plan/missing/count и
+  детерминированный token. `delete_download(..., expected_plan=...)` повторно
+  строит план до первого эффекта; нет token — `CONFIRMATION_REQUIRED`, изменения
+  существенных inputs/замена — `STALE_PLAN`. Token не авторизация, registry,
+  clock expiry и автоматического повторного согласия нет.
+- Использован существующий coordinator mutation lock: authoritative task/pending
+  state, root/record/identity/shared/ancestry checks перед каждым эффектом. Даже
+  keep-files нельзя удалять незавершённую запись. Неизвестная область legacy
+  nonterminal не угадывается по текущим defaults read-only reader-а.
+- Только записанные artifacts/legacy media/sidecars; без scan/newest/rmtree,
+  permanent unlink, directory cleanup или миграции старых файлов. Folder-only
+  legacy отказывает. Direct links, symlink/junction/reparse ancestry, unsafe
+  roots/outside/directories/shared attribution отказывают; aliases не расширяют
+  область. Это не hostile filesystem sandbox и не media+JSON транзакция.
+- Существующий file-remover port подключён default bootstrap-ом к ленивому
+  инфраструктурному QtCore Trash adapter, без QApplication/Qt imports в core.
+  Проверяются capability и установленная tuple return form, нет fallback delete.
+- Сначала индивидуальные известные moves, затем durable history delete. Partial,
+  unknown и save failure возвращают safe structured result/counts/repreview,
+  не ложное deleted=True и не rollback. Старые result keys/defaults сохранены.
+
+## Connected доказательства S4
+
+| Риск / наблюдение | Авторский результат |
+|---|---|
+| Exact media/sidecars, parent/sibling/unlisted preservation | Реальные fixture-directory Trash moves и bytes, JSON/reopen, никакого tree deletion |
+| Preview/keep-files/confirmation | Store/media bytes сохранены, matching record-only token удаляет только запись; no/wrong token отказывает |
+| Roots/links/shared/unfinished | Public API отказы без эффектов; реальные native direct/ancestor symlinks и Windows junction внутри root; cancel intent не quiescence |
+| ID/bool и все stale dimensions | ID/mode/root/default-root/record/file-set/size/mtime/identity/replacement; clone size/mtime сохранены, новый inode защищён |
+| Second move failure | Первый реально перемещён/recoverable, второй на месте, запись сохранена, PARTIAL_DELETE и следующий preview/keep-files работают |
+| History replace failure после moves | PERSISTENCE_FAILED, старые disk/cache/reopen, bytes в synthetic trash; retained uncommitted temp закрыт, не объявлен authoritative store |
+| Missing/zero/aliases | Честные counts/files_removed, настоящий target dedupe; spelling/hardlink shared-attribution bypass отвергнут |
+| Replay/lost response/new target | После success NOT_FOUND без действия; старый token после partial/new same-name file отказывает |
+| Infrastructure/headless | Реальный adapter с подменой только Qt OS call, actual lazy/core import checks и native capability без QApplication |
+| Diagnostics | Настоящие application/adapter emitters → formatter/handlers/flush, непустые main/error files и configured stream; ID/code/count есть, synthetic sensitive markers отсутствуют |
+
+Последний addressed run: **63 passed**, raw/native0, 0 skips. Он включает новые
+safe-delete/file-remover modules, два разрешённых direct API consumers и core
+import boundary. Не складывается с полным прогоном или прежними S3 totals.
+
+## Обязательные gates и незакрытая граница
+
+- Full offline command выполнен: **raw/native1, 237 passed, 2 failed, 7 e2e
+  deselected, 0 skips**. Оба failures — неизменённые adapter portions
+  `test_history_manager_delete_uses_shared_command_api` и
+  `test_cli_history_delete_confirm_json`: старый unsafe success без plan token
+  теперь получает controlled refusal. Они вне текущего direct-API edit ceiling.
+  **Gate не PASS и не waived**: через Hermes запрошен только test-expectation
+  exception для этих двух узлов, без adapter wiring/API bypass/skip/xfail.
+- E,F,I по всем десяти changed Python files: raw0. Full mypy: raw1, **те же34
+  findings/15 files**, checked68; exact location/cause comparison new0/removed0.
+  Первоначальная новая bool/int annotation ошибка исправлена, не скрыта baseline.
+- Четыре module smokes реально выполнены raw0: help, MCP discovery, stdio parity,
+  offscreen GUI construction. Последующая private deletion-guard коррекция их
+  не достигается; это применимые receipts, не новая S5 lifecycle/tool acceptance.
+- После gates удалены только лишние EOF blank lines command_api; identical
+  compiled-code binding сохраняет применимость receipts, без runtime rerun ради
+  нового зелёного ярлыка. Diff-check исправление и исходный raw2 сохранены.
+
+Сохранены meaningful no-token RED→GREEN и два active-preview RED→GREEN. Отдельный
+ранний raw1 был ошибочным новым test oracle о пустом temp-каталоге: принятый atomic
+writer сохраняет uncommitted candidate после replace failure; проверка теперь
+наблюдает его валидные bytes и закрытый handle, не меняет S2 repository. Initial
+lint/type failures и все попытки/источники/argv/env/native receipts сохранены в
+локальном `coder-evidence/s4/`; cumulative freeze и полный отчёт — там и в
+`coder-s4-result.md`. Все owned test workers/children/leases/handlers освобождены,
+watchdog emergency cleanup не потребовался.
+
+**Статус: BLOCKED, не READY_FOR_REVIEW**, пока Hermes не разрешит конкретную
+двухузловую test-only дельту и обязательный full gate не будет закрыт на successor.
+Это не новый архитектурный approval gate и не разрешение ослабить API.
+
+NOT_RUN: native Trash move/restore (нет проверенного portable restore через
+установленный QFile; пользовательская Корзина не тронута), live network/YouTube,
+codec quality, Linux/runtime/remote CI, packaging/manual visual GUI, full legacy
+privacy, S5–S6. Qt capability=True не выдан за состоявшийся Trash effect. Текущие
+CLI/MCP/GUI token/lifetime/fallback wiring остаются отдельным S5, не безопасной
+аттестацией всех legacy adapters.
+
+# S4 completion-01 — авторский successor READY_FOR_REVIEW
+
+Предыдущая BLOCKED-стадия и её raw1 остаются выше без изменений. Hermes разрешил
+ровно два test-only изменения: HistoryManager/CLI ожидания старого confirm без
+plan token. Runtime/source/ports/bootstrap/GUI/MCP/CLI wiring не менялись; S5
+positive token/lifetime matrix не заменена текущими compatibility refusals.
+
+В `tests/test_cli_command_api.py` изменены только
+`test_history_manager_delete_uses_shared_command_api` и
+`test_cli_history_delete_confirm_json`, их локальные fixture/assertion setup и два
+необходимых imports. Real manager и real parser вызывают тот же shared API с
+прежними ID4/ID3, delete_files=True, без token. Прозрачный observer вызывает
+исходный bound method, не подменяет результат: наблюдается настоящий
+CONFIRMATION_REQUIRED, а не ранний parser/owner/unsafe-scope error. CLI в этом
+in-process вызове возвращает1, stdout пуст, stderr — safe error/hint JSON; это не
+новая standalone process/lifecycle аттестация. Проверены неизменные cache/history
+JSON bytes/reopen, media/unlisted/sibling/parent bytes и директории. Собственные
+CLI log handlers закрываются в finally, borrowed handlers восстанавливаются.
+
+Свежие affected проверки, owned pre-import isolation и тот же bounded native Job
+supervisor, только в `coder-evidence/s4/completion-01/`:
+
+| Команда / граница | Raw/native | Результат |
+|---|---:|---|
+| `uv run --locked --no-sync pytest tests/test_cli_command_api.py -q -rs` | 0 | **14 passed**,0 skips; correctly-tokened direct-API positives сохранены |
+| `uv run --locked --no-sync ruff check --select E,F,I tests/test_cli_command_api.py` | 0 | Actual changed file, без общего reformat/suppression |
+| `uv run --locked --no-sync pytest tests/ -m "not e2e" -q` | 0 | **239 passed,7 e2e deselected,0 skips**; прежние два обязательных failures закрыты |
+
+Whole-S4 ledger не сокращён до двух новых GREEN. Прежние addressed63, exact
+full-mypy34/15/new0/removed0, остальные unchanged-file lint facts, четыре smokes,
+real adapter/native capability/link/junction/preservation/sink witnesses применимо
+retained с source/assertion/receipt binding. Отдельных повторов63/177/mypy/smokes
+нет. Full239 по требованию содержит те же выбранные cases, пересекающиеся counts
+не складываются. Global mypy остаётся raw1, не type PASS; capability не Trash
+move/restore. Native Trash, CI/platform/live/codec/legacy-privacy ограничения не
+менялись.
+
+Заморожен весь cumulative11 successor (не два delta paths): exact copies/tar,
+предыдущие9 candidate bytes и40 protected bytes неизменны, original preimages и
+четыре absences сохранены. Весь предыдущий VERIFICATION — byte prefix. Primary
+manifest — `coder-evidence/s4/completion-01/final/candidate-manifest.json`, отчёт —
+`coder-s4-completion-01-result.md`. Все own test resources освобождены, index пуст.
+Coder не stage/commit/push; независимой whole-S4 приёмки ещё нет. Следующий владелец
+— тот же Reviewer; READY_FOR_REVIEW не ACCEPTED и не разрешение начать S5.
+
+# S4 — независимая приёмка целого среза
+
+**Whole-S4 ACCEPTED на одном cumulative successor.** Это не приёмка только двух
+исправленных compatibility tests. Исторические BLOCKED/RED и весь предшествующий
+текст сохранены без переписывания. Нормативные PLAN/CONTRACT не ослаблены и не
+редактировались при документационном завершении; текущее состояние отмечено здесь.
+S5 positive adapter confirmation/lifetime и S6 final matrix остаются будущими.
+
+Приняты 10 Python paths и фактическое дополнение этого журнала: Application API /
+command policy, isolated deletion helper, DTO/port, lazy infrastructure remover,
+minimal bootstrap и три затронутых test modules. Проверены реальные определения,
+consumers и сохранность остальных source bytes. Source/tests/index до technical
+verdict были read-only; документационное завершение не содержит runtime repairs.
+
+## Реализованный scope
+
+- Preview не меняет files/history. Применение требует того же ID/режима и matching
+  `expected_plan`; token связывает record/root/file-set/identity, но не удостоверяет
+  пользователя. Без token — CONFIRMATION_REQUIRED; изменённое ожидание — STALE_PLAN.
+- Только явно записанные media/sidecars: modern/legacy paths dedupe-ятся без
+  shared/alias escape. Папки, parent, unlisted/siblings сохраняются; folder-only
+  legacy запись не порождает directory scan. Keep-files удаляет лишь запись.
+- Небезопасные roots, outside/directory/direct/ancestor link/reparse/shared targets
+  и active/nonterminal/unquiesced работа блокируют эффект. Cancel intent не terminal.
+  Проверки повторяются перед каждым move в общей mutation boundary.
+- После реального первого move и отказа второго — PARTIAL_DELETE с известными
+  moved/failed/unknown/missing facts и retained record, не ложный полный success.
+  После moves и failed history-save — PERSISTENCE_FAILED, явный history_deleted,
+  cache/disk/reopen semantics и usable repreview. Media+JSON не crash-atomic.
+- Уже перемещённые bytes остаются восстановимыми на OS-edge; автоматического
+  rollback/retry нет. Старый token не трогает replacement после partial/lost response;
+  успешный replay получает NOT_FOUND без нового filesystem effect. Ноль moves даёт
+  files_removed=False, а True не означает исчезновение папки.
+- Default Trash adapter остаётся lazy infrastructure-only QtCore, без QApplication,
+  установки пакета или permanent-delete fallback. Поддержка и фактический результат
+  проверяются отдельно; synthetic effect не называется native Trash qualification.
+
+## Свежие независимые проверки
+
+Все product processes запускались через existing venv/locked/no-sync с offline /
+no-download flags, winning owned data/home/temp/cache/log/output roots до imports
+и collection, audited plugins, absolute Windows basetemp и bounded native Job
+watcher. `tests/downloads` исключён до collection; пользовательские данные не читались.
+
+| Проверка | Raw exit | Факт / граница |
+|---|---:|---|
+| Useful correctly-tokened exact-files и keep-files positives | 0 | **2 passed**, настоящие policy/repository/files/JSON/reopen |
+| Whole safe-delete/remover/CLI-command/core-boundary modules | 0 | **75 passed**,0 failures/errors/skips; включает оба revised consumers |
+| Full offline `pytest tests/ -m "not e2e" -q` с исключением data folder | 0 | **239 passed,7 e2e deselected,0 skips**; тот же выбранный case Counter, что сохранённый прежний full239 |
+| E,F,I по всем 10 changed Python files | 0 | Без suppression и без объявления full lint PASS |
+| `mypy src/ --ignore-missing-imports` | 1 | Те же **34 inherited findings/15 files**, checked68; exact location/cause equality с принятым S3 и авторским S4, new0/removed0 |
+| Четыре module smokes | 0 each | Help5/discovery10/real stdio parity/offscreen construction; не S5 tool effects/lifetime |
+| Независимый actual completed-task → delete → reopen → next keep-files control | 0 | Две настоящие управляемые задачи, media/sidecar moves2 с byte readback, parent/unlisted/sibling сохранены, useful next operation |
+| Default bootstrap без shell/backend imports и actual installed Qt capability | 0 | Lazy default без QApplication; capability=True, не native move/restore |
+| Source/AST/JUnit/native/fixture/type/sink reconciliation | 0 | Применимость и артефакты, не дополнительное runtime coverage |
+
+2/75/239 пересекаются и не суммируются. Новая обязательная full/type/smoke проверка
+выполнена независимо; авторские14/63/239 её не заменяют. Неизменённые S1–S3 owners /
+storage/lifecycle/outcome/format facts применимо сохранены, без отдельного replay
+прошлых срезов, foundation pack или архитектурного survey.
+
+## Исходная матрица и существенные границы
+
+| Обязательство | Независимое основание |
+|---|---|
+| Exact attributed media/sidecars, durable absence, keep-files и preservation | Fresh useful positives, whole modules и real completed-task control; реальные bytes в synthetic recoverable tree и reopened JSON |
+| Preview/token/no-token и legacy callers | Source/AST bound matching/stale cases; оба реальных старых вызова ID4/ID3, delete_files=True/без token достигают настоящего CONFIRMATION_REQUIRED и сохраняют cache/disk/reopen/media |
+| Roots/outside/links/shared/activity | Fresh cases, два actual native symlink fixtures и inside-root native junction replacement; blocked fetch/cancel finally release/join и последующий useful delete |
+| Validation/staleness/identity/move-time | Strict ID/bool, десять material dimensions, same-size/mtime distinct inode и checkpoint замены второго файла; source/assertion/physical readbacks |
+| Partial second-move failure и unknown post-effect | Known moved1/failed1 либо explicit unknown/not_attempted, retained history, recoverable bytes и protected replacement/repreview |
+| Atomic history-save failure после moves | Real os.replace refusal, truthful PERSISTENCE_FAILED, unchanged authoritative cache/disk/reopen на отказе, retained closed temp и missing-only recovery |
+| Missing/zero/dedupe | Совместные modern/legacy/spelling paths без double count/чужой attribution; zero moves не success-флаг удаления файлов |
+| Retry/lost response | NOT_FOUND после success и stale old token после partial/new target; нет автоматического повторения опасного действия |
+| Infrastructure/default/headless/native | Actual Python adapter result/error, default policy wiring и lazy core; synthetic moves/native capability раздельны; actual native Trash restore NOT_RUN |
+| Diagnostics | Непустые настоящие application/adapter main/error/configured stream через formatter/handlers/flush; ID/code/count сохранены, private sentinels отсутствуют; safe CLI refusal |
+
+Два compatibility observers прозрачно вызывают исходный bound API, не возвращают
+scripted success/error и не mint-ят token. Реальный in-process CLI возвращает1,
+stdout пуст, stderr — safe error/hint JSON. API code подтверждён на самом исключении;
+wire code или standalone native CLI qualification этим не выдумываются. Production
+CLI/MCP/GUI token wiring не менялось; его успешная интеграция — S5.
+
+**NOT_RUN / пределы:** native Trash move/restore (portable restoration не проверена;
+пользовательская Корзина не перечислялась/не трогалась), live YouTube/network E2E,
+codec/FFmpeg quality, Linux runtime/remote CI, packaged EXE/manual visual GUI,
+whole legacy/native Qt stderr privacy. PLAN S4 допускает честный native NOT_RUN;
+capability=True и synthetic recoverable rename не превращаются в состоявшийся OS
+Trash effect. Все own workers/leases/handlers/barriers/наблюдённые descendants
+освобождены, watchdog emergency cleanup не понадобился.
+
+Независимая technical acceptance, affected documentation checks, selective commit,
+remote ref readback и exact-head CI — отдельные факты. Отсутствие branch-trigger
+проверок не CI PASS. После публикации/освобождения следующий срез назначается
+по существующему командному порядку; S5 в этой приёмке не начинался.

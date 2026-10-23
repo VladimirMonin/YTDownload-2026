@@ -184,13 +184,29 @@ class ApplicationAPI:
     def cancel_download(self, download_id: int) -> CancelResult:
         return self._command_api().cancel_download(download_id)
 
+    def _deletion_api(self) -> DownloadCommandAPI:
+        return DownloadCommandAPI(
+            coordinator=self.coordinator, history_repo=self.history_repo,
+            file_remover=self.runtime.file_remover if self.runtime is not None else None,
+            data_root=self.runtime.data_root if self.runtime is not None else None,
+            output_root=(
+                self.runtime.get_settings().output_dir if self.runtime is not None else None
+            ),
+        )
+
     def prepare_delete_download(
         self, download_id: int, *, delete_files: bool = True
     ) -> DeletePreview:
-        return self._command_api().prepare_delete_download(download_id, delete_files=delete_files)
+        return self._deletion_api().prepare_delete_download(download_id, delete_files=delete_files)
 
-    def delete_download(self, download_id: int, *, delete_files: bool = True) -> DeleteResult:
-        return self._command_api().delete_download(download_id, delete_files=delete_files)
+    def delete_download(
+        self, download_id: int, *, delete_files: bool = True, expected_plan: str | None = None,
+    ) -> DeleteResult:
+        if self.runtime is not None:
+            self.runtime.require_writable()
+        return self._deletion_api().delete_download(
+            download_id, delete_files=delete_files, expected_plan=expected_plan,
+        )
 
     def _history_projection(
         self,
