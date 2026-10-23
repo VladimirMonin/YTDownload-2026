@@ -25,7 +25,7 @@ def _make_service(ffmpeg_path: Path, output_dir: Path, proxy: str = ""):
     """Создаёт YtDlpService с тестовыми настройками."""
     from src.infrastructure.ytdlp_service import YtDlpService
 
-    return YtDlpService(ffmpeg_path=ffmpeg_path, proxy=proxy)
+    return YtDlpService(ffmpeg_path=ffmpeg_path)
 
 
 def _make_task(task_id: int, url: str, quality, download_type=None):
@@ -80,7 +80,7 @@ def test_fetch_info_playlist(tmp_path: Path, ffmpeg_path: Path) -> None:
 @pytest.mark.e2e
 def test_download_720p(tmp_path: Path, ffmpeg_path: Path, ffprobe_path: Path) -> None:
     """Скачивает видео в 720p и проверяет через ffprobe."""
-    from src.domain.models.app_settings import AppSettings, QualityOption, DownloadType
+    from src.domain.models.app_settings import AppSettings, DownloadType, QualityOption
     from src.infrastructure.ytdlp_service import YtDlpService
 
     svc = YtDlpService(ffmpeg_path=ffmpeg_path)
@@ -92,7 +92,7 @@ def test_download_720p(tmp_path: Path, ffmpeg_path: Path, ffprobe_path: Path) ->
     def on_progress(percent, speed, eta):
         progress_calls.append(percent)
 
-    result = svc.download(task, tmp_path, on_progress)
+    result = svc.download(task, settings, on_progress)
 
     # Проверяем что видео файл создан
     assert result.get("video") or result.get("video_path"), f"No video in result: {result}"
@@ -110,14 +110,14 @@ def test_download_720p(tmp_path: Path, ffmpeg_path: Path, ffprobe_path: Path) ->
 @pytest.mark.e2e
 def test_download_audio_only(tmp_path: Path, ffmpeg_path: Path, ffprobe_path: Path) -> None:
     """Скачивает только аудио и проверяет через ffprobe."""
-    from src.domain.models.app_settings import AppSettings, QualityOption, DownloadType
+    from src.domain.models.app_settings import AppSettings, DownloadType, QualityOption
     from src.infrastructure.ytdlp_service import YtDlpService
 
     svc = YtDlpService(ffmpeg_path=ffmpeg_path)
     task = _make_task(2, VIDEO_URL, QualityOption.AUDIO, DownloadType.AUDIO)
     settings = AppSettings(output_dir=tmp_path, download_type=DownloadType.AUDIO)
 
-    result = svc.download(task, tmp_path, lambda p, s, e: None)
+    result = svc.download(task, settings, lambda p, s, e: None)
 
     audio_file = result.get("audio") or result.get("audio_path")
     if audio_file:
@@ -127,7 +127,7 @@ def test_download_audio_only(tmp_path: Path, ffmpeg_path: Path, ffprobe_path: Pa
 @pytest.mark.e2e
 def test_download_with_description(tmp_path: Path, ffmpeg_path: Path) -> None:
     """Скачивает видео с описанием и проверяет созданные файлы."""
-    from src.domain.models.app_settings import AppSettings, QualityOption, DownloadType
+    from src.domain.models.app_settings import AppSettings, DownloadType, QualityOption
     from src.domain.models.download_task import DownloadTask
     from src.infrastructure.ytdlp_service import YtDlpService
 
@@ -140,7 +140,7 @@ def test_download_with_description(tmp_path: Path, ffmpeg_path: Path) -> None:
         save_description=True,
         save_thumbnail=True,
     )
-    result = svc.download(task, tmp_path, lambda p, s, e: None)
+    result = svc.download(task, AppSettings(output_dir=tmp_path), lambda p, s, e: None)
 
     # Должно быть описание или thumbnail (зависит от видео)
     assert result is not None
@@ -165,7 +165,7 @@ def test_download_playlist_first_item(tmp_path: Path, ffmpeg_path: Path) -> None
         url=PLAYLIST_URL,
         quality=QualityOption.P360,
     )
-    result = svc.download(task, tmp_path, lambda p, s, e: None)
+    result = svc.download(task, AppSettings(output_dir=tmp_path), lambda p, s, e: None)
     assert result is not None
 
 
@@ -186,10 +186,8 @@ def test_coordinator_queue_while_downloading(tmp_path: Path, ffmpeg_path: Path) 
     history_repo = JsonHistoryRepository(tmp_path / "data")
     settings = AppSettings(output_dir=tmp_path / "downloads", quality=QualityOption.P360)
     event_bus = EventBus()
-    svc = YtDlpService(ffmpeg_path=ffmpeg_path)
-
     coordinator = DownloadCoordinator(
-        service=svc,
+        service_factory=lambda: YtDlpService(ffmpeg_path=ffmpeg_path),
         history_repo=history_repo,
         settings=settings,
         event_bus=event_bus,

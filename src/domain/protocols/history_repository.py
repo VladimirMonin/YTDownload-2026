@@ -8,6 +8,14 @@ from typing import Optional
 from ..models import HistoryEntry
 
 
+class StorageError(RuntimeError):
+    """Safe storage failure; never carries raw paths, JSON or exception text."""
+
+    def __init__(self, message: str, *, code: str) -> None:
+        super().__init__(message)
+        self.code = code
+
+
 class IHistoryRepository(ABC):
     """Интерфейс репозитория истории загрузок.
 
@@ -40,6 +48,10 @@ class IHistoryRepository(ABC):
         Raises:
             KeyError: Если запись с таким ID не найдена.
         """
+
+    @abstractmethod
+    def update_many(self, entries: list[HistoryEntry]) -> None:
+        """Atomically persist detached updates (including startup recovery)."""
 
     @abstractmethod
     def get_by_id(self, entry_id: int) -> Optional[HistoryEntry]:

@@ -113,7 +113,7 @@ def test_gui_settings_defaults_and_json_roundtrip(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize("consumer", ["api", "gui-owner"])
 def test_add_defaults_reach_real_coordinator_and_history(
-    monkeypatch, tmp_path: Path, consumer: str
+    tmp_path: Path, consumer: str
 ) -> None:
     observed: list[tuple] = []
 
@@ -135,9 +135,11 @@ def test_add_defaults_reach_real_coordinator_and_history(
             return {"video": media, "audio": None, "subtitles": []}
 
     # Only the external backend is replaced; API, coordinator and JSON are real.
-    monkeypatch.setattr("src.application.download_coordinator.YtDlpService", SyntheticBackend)
     repo = JsonHistoryRepository(tmp_path / "data")
-    coordinator = DownloadCoordinator(repo, AppSettings(output_dir=tmp_path / "output"), EventBus())
+    coordinator = DownloadCoordinator(
+        repo, AppSettings(output_dir=tmp_path / "output"), EventBus(),
+        service_factory=SyntheticBackend,
+    )
     api = ApplicationAPI(repo, coordinator)
     try:
         if consumer == "api":

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, is_dataclass
+from dataclasses import asdict, dataclass, field, is_dataclass
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
@@ -19,6 +19,15 @@ class _MappingLikeDTO:
 class QueryErrorDTO(_MappingLikeDTO):
     error: str
     hint: str | None = None
+    code: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ShutdownResultDTO(_MappingLikeDTO):
+    closed: bool
+    pending_task_ids: list[int] = field(default_factory=list)
+    persistence_error_ids: list[int] = field(default_factory=list)
+    error_codes: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True, slots=True)

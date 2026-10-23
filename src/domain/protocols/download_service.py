@@ -8,6 +8,9 @@ from typing import Callable, Optional
 
 from ..models import AppSettings, DownloadTask, VideoInfo
 
+# Legacy path-map contract, including subtitle lists. Typed outcomes follow in S3.
+DownloadPaths = dict[str, Path | list[Path] | None]
+
 
 class IDownloadService(ABC):
     """Интерфейс сервиса загрузки через yt-dlp."""
@@ -33,7 +36,7 @@ class IDownloadService(ABC):
         task: DownloadTask,
         settings: AppSettings,
         progress_callback: Optional[Callable[[float, float, int], None]] = None,
-    ) -> dict[str, Optional[Path]]:
+    ) -> DownloadPaths:
         """Скачивает видео согласно заданию.
 
         Args:

@@ -4,39 +4,52 @@ import logging
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from src.application.history_semantics import (
     resolve_history_entry_folder,
     resolve_history_entry_title,
 )
+from src.domain.download_rules import (
+    DownloadRuleError,
+    normalize_options,
+    normalize_url,
+    validate_download_id,
+    validate_optional_flag,
+)
 from src.domain.models.app_settings import DownloadType, QualityOption
+from src.domain.protocols import IHistoryRepository
+
+if TYPE_CHECKING:
+    from src.application.download_coordinator import DownloadCoordinator
 
 logger = logging.getLogger(__name__)
-
-_VALID_QUALITY = {"best", "1080p", "720p", "480p", "360p", "audio"}
-_VALID_TYPE = {"video", "audio"}
-
 
 class CommandError(Exception):
     """Base command-layer exception with a user-facing hint."""
 
-    def __init__(self, message: str, hint: str | None = None) -> None:
+    code = "INTERNAL_ERROR"
+
+    def __init__(
+        self, message: str, hint: str | None = None, *, code: str | None = None
+    ) -> None:
         super().__init__(message)
         self.message = message
         self.hint = hint
+        if code is not None:
+            self.code = code
 
 
 class ValidationError(CommandError):
-    pass
+    code = "INVALID_ARGUMENT"
 
 
 class NotFoundError(CommandError):
-    pass
+    code = "NOT_FOUND"
 
 
 class ConflictError(CommandError):
-    pass
+    code = "ALREADY_TERMINAL"
 
 
 @dataclass(frozen=True)
@@ -77,7 +90,9 @@ class DeleteResult:
 class DownloadCommandAPI:
     """Transport-neutral command layer shared by CLI and MCP."""
 
-    def __init__(self, coordinator: Any, history_repo: Any) -> None:
+    def __init__(
+        self, coordinator: DownloadCoordinator, history_repo: IHistoryRepository
+    ) -> None:
         self._coordinator = coordinator
         self._history_repo = history_repo
 
@@ -85,30 +100,25 @@ class DownloadCommandAPI:
         self,
         *,
         url: str,
-        quality: str = "720p",
-        download_type: str = "video",
+        quality: str | None = "720p",
+        download_type: str | None = "video",
         subtitle_lang: str | None = None,
-        save_subtitles: bool = False,
-        save_description: bool = False,
-        save_thumbnail: bool = False,
+        save_subtitles: bool | None = False,
+        save_description: bool | None = False,
+        save_thumbnail: bool | None = False,
     ) -> AddDownloadResult:
         normalized_url = self._normalize_url(url)
         normalized_quality, normalized_type = self._normalize_add_options(quality, download_type)
 
-        quality_map = {
-            "best": QualityOption.BEST,
-            "1080p": QualityOption.P1080,
-            "720p": QualityOption.P720,
-            "480p": QualityOption.P480,
-            "360p": QualityOption.P360,
-            "audio": QualityOption.AUDIO,
-        }
+        try:
+            for flag in (save_subtitles, save_description, save_thumbnail):
+                validate_optional_flag(flag)
+        except DownloadRuleError as exc:
+            raise ValidationError(str(exc), exc.hint) from None
         task_id = self._coordinator.add(
             url=normalized_url,
-            quality=quality_map[normalized_quality],
-            download_type=(
-                DownloadType.AUDIO if normalized_type == "audio" else DownloadType.VIDEO
-            ),
+            quality=QualityOption(normalized_quality) if normalized_quality is not None else None,
+            download_type=DownloadType(normalized_type) if normalized_type is not None else None,
             subtitle_lang=subtitle_lang,
             save_subtitles=save_subtitles,
             save_description=save_description,
@@ -123,6 +133,7 @@ class DownloadCommandAPI:
         return AddDownloadResult(task_id=task_id, status="queued")
 
     def prepare_cancel_download(self, download_id: int) -> CancelPreview:
+        download_id = self._positive_id(download_id)
         task = self._coordinator.get_task(download_id)
         if task is None:
             raise NotFoundError(
@@ -155,6 +166,7 @@ class DownloadCommandAPI:
         return CancelResult(id=download_id, status="cancel_requested")
 
     def prepare_delete_download(self, download_id: int, delete_files: bool = True) -> DeletePreview:
+        download_id = self._positive_id(download_id)
         entry = self._history_repo.get_by_id(download_id)
         if entry is None:
             raise NotFoundError(
@@ -195,35 +207,28 @@ class DownloadCommandAPI:
         return DeleteResult(id=download_id, deleted=True, files_removed=files_removed)
 
     @staticmethod
-    def _normalize_url(url: str) -> str:
-        normalized_url = (url or "").strip()
-        if not normalized_url.startswith(("http://", "https://")):
-            raise ValidationError(
-                "Invalid URL",
-                "URL must start with http:// or https://",
-            )
-        return normalized_url
+    def _positive_id(download_id: int) -> int:
+        try:
+            return validate_download_id(download_id)
+        except DownloadRuleError as exc:
+            raise ValidationError(str(exc), exc.hint) from None
 
     @staticmethod
-    def _normalize_add_options(quality: str, download_type: str) -> tuple[str, str]:
-        normalized_quality = (quality or "").lower().strip()
-        normalized_type = (download_type or "").lower().strip()
+    def _normalize_url(url: str) -> str:
+        try:
+            return normalize_url(url)
+        except DownloadRuleError as exc:
+            raise ValidationError(str(exc), exc.hint) from None
 
-        if normalized_quality == "audio":
-            normalized_type = "audio"
-            normalized_quality = "best"
-
-        if normalized_quality not in _VALID_QUALITY:
-            raise ValidationError(
-                f"Invalid quality '{normalized_quality}'",
-                f"Valid values: {', '.join(sorted(_VALID_QUALITY))}",
-            )
-        if normalized_type not in _VALID_TYPE:
-            raise ValidationError(
-                f"Invalid download_type '{normalized_type}'",
-                "Valid values: video, audio",
-            )
-        return normalized_quality, normalized_type
+    @staticmethod
+    def _normalize_add_options(
+        quality: str | None, download_type: str | None
+    ) -> tuple[str | None, str | None]:
+        try:
+            q, t = normalize_options(quality, download_type)
+            return q.value if q is not None else None, t.value if t is not None else None
+        except DownloadRuleError as exc:
+            raise ValidationError(str(exc), exc.hint) from None
 
 
 def build_command_api(services: dict[str, Any]) -> DownloadCommandAPI:

@@ -43,7 +43,9 @@ def _summary_dto(
 
 
 def _details_dto(entry: HistoryEntry) -> DownloadDetailsDTO:
-    summary = _summary_dto(entry)
+    summary = _summary_dto(
+        entry, description_path=str(entry.description_path) if entry.description_path else None
+    )
     return DownloadDetailsDTO(
         id=summary.id,
         url=summary.url,

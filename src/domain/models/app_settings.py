@@ -98,6 +98,11 @@ class AppSettings:
         Returns:
             Экземпляр AppSettings.
         """
+        if "output_dir" in data and (
+            not isinstance(data["output_dir"], (str, Path))
+            or not str(data["output_dir"]).strip()
+        ):
+            raise ValueError("Invalid output directory")
         return cls(
             output_dir=Path(
                 data.get("output_dir", str(Path.home() / "Downloads" / "YTDownloader"))

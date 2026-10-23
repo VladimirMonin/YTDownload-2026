@@ -6,7 +6,8 @@
 
 Разработка: [AGENTS.md](AGENTS.md), [инженерная документация](docs/engineering.md),
 [философия command-first](docs/foundation/project-philosophy.md). Исходный GUI
-сохраняется. Независимо принят только S1 — isolated offline baseline; S2–S6 ещё
+сохраняется. Независимо приняты S1 (isolated baseline) и S2 (runtime/ports,
+владение хранилищем, fail-closed JSON и smoke isolation). S3–S6 ещё
 не реализованы/не приняты: [план](docs/command-first/PLAN.md),
 [предлагаемый контракт](docs/command-first/CONTRACT.md),
 [фактическая проверка и ограничения](docs/command-first/VERIFICATION.md).
@@ -329,17 +330,50 @@ uv run --locked --no-sync ruff check --select E,F,I <changed-python-files>
 ```
 
 Подставить непустой список изменённых Python-файлов. Полный lint/type baseline
-не равен changed-file gate: в S1 mypy остаётся exit1 с прежними 35 ошибками/16 файлами;
+не равен changed-file gate: после S2 mypy остаётся exit1 с 34 унаследованными ошибками/15 файлами;
 подробности — [VERIFICATION](docs/command-first/VERIFICATION.md). Live E2E требует
 отдельного явного разрешения с конкретным URL; примеры в руководстве его не дают.
 Изменения только документации требуют affected checks, не автоматического повторения suite.
 
 ---
 
+## Прямой Python API и время жизни
+
+`src.bootstrap.create_runtime` собирает независимое приложение без окна/сервера и
+глобальной настройки logging. `main.initialize_app()` сохраняет прежний dict keys
+и aliases `application_api`/`command_api`, добавляя owning `runtime`.
+
+Пример **чтения собственного тестового профиля**, не рабочего пользовательского store:
+
+```python
+from pathlib import Path
+from src.bootstrap import create_runtime
+
+with create_runtime(Path("owned-test-profile"), read_only=True) as runtime:
+    summaries = runtime.api.list_downloads()
+```
+
+Read-only создаёт detached last-saved snapshot, не папку/lease/executor/recovery и
+не подключение к чужой живой очереди. Writable runtime сначала берёт exclusive lease
+на canonical root; второй writer получает OWNER_BUSY. При writable reopen orphan
+queued/downloading/merging становятся failed/INTERRUPTED без replay/очистки media.
+Закрывайте принадлежащий caller-у runtime: context manager делает drain; явный S2
+join — `close(cancel=False, wait=True)`. `wait=False` не освобождает lease до join.
+Borrowed wrapper не закрывает caller. Полная cooperative cancellation/outcome модель
+ещё S3, standalone adapter lifetime/read-only CLI mode — S5; `--data-dir` пока не
+добавлен в parser. Отдельные процессы с одной библиотекой не разделяют live queue.
+
+`get_settings()` возвращает копию; `update_settings()` сохраняет до публикации
+новых defaults. Overrides при construction сами по себе не записываются. JSON
+ошибки не превращаются в defaults/успех: STORAGE_CORRUPT/PERSISTENCE_FAILED/OWNER_BUSY
+доступны в direct API exceptions; полное transport mapping ещё впереди. Политика и
+границы — [CONTRACT](docs/command-first/CONTRACT.md), [окружение](docs/agent-instructions/02-environment-and-dependencies.md).
+
 ## 🔧 Переменные окружения
 
 | Переменная | По умолчанию | Описание |
 |------------|-------------|----------|
+| `YTDL_DATA_DIR` | APPDATA/YTDownloader либо home/YTDownloader | Непустой data-root override; явный Python `data_root` выше env. Под ним config/data/logs; handlers настраиваются отдельно. Smoke всегда переопределяет его в собственный subtree и восстанавливает после проверки |
 | `YTDL_LOG_LEVEL` | `INFO` | Уровень логирования (`DEBUG`/`INFO`/`WARNING`); DEBUG не разрешает пользовательское содержимое |
 | `YTDL_LOG_DIR` | `logs/` рядом с проектом | Непустой override для `setup_logging()` без аргумента; явный `log_dir` выше env. GUI `app.py` передаёт свой APPDATA log path |
 | `YTDL_FFMPEG_PATH` | auto-detect | Явный путь к исполняемому `ffmpeg`; без него используется `vendor/ffmpeg/bin` или системный `PATH` |

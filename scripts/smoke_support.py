@@ -30,6 +30,7 @@ def isolated_smoke() -> Iterator[Path]:
         "XDG_CACHE_HOME": root / "cache",
         "UV_CACHE_DIR": root / "cache" / "uv",
         "YTDL_LOG_DIR": root / "logs",
+        "YTDL_DATA_DIR": root / "appdata" / "YTDownloader",
         "YTDL_OUTPUT_DIR": root / "home" / "Downloads" / "YTDownloader",
     }
     overrides = {key: str(path) for key, path in paths.items()}

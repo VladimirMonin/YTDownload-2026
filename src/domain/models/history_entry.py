@@ -57,6 +57,8 @@ class HistoryEntry:
     error_message: str = ""
     created_at: datetime = field(default_factory=datetime.now)
     finished_at: Optional[datetime] = None
+    output_root: Optional[Path] = None  # Admission settings snapshot, not a deletion grant.
+    error_code: Optional[str] = None
 
     def to_dict(self) -> dict:
         """Сериализует запись в словарь для JSON."""
@@ -86,6 +88,8 @@ class HistoryEntry:
             "error_message": self.error_message,
             "created_at": self.created_at.isoformat(),
             "finished_at": self.finished_at.isoformat() if self.finished_at else None,
+            "output_root": _path(self.output_root),
+            "error_code": self.error_code,
         }
 
     @classmethod
@@ -122,4 +126,6 @@ class HistoryEntry:
             finished_at=(
                 datetime.fromisoformat(data["finished_at"]) if data.get("finished_at") else None
             ),
+            output_root=_path(data.get("output_root")),
+            error_code=data.get("error_code"),
         )

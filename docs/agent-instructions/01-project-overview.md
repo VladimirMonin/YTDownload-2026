@@ -18,9 +18,10 @@ requested, not assumed complete from the existence of an API module.
 ## Architecture
 
 - `app.py` — GUI entry point.
-- `main.py` — dependency wiring / DI container.
+- `main.py` — compatibility wrapper `initialize_app`, preserving service keys and exposing `runtime`.
+- `src/bootstrap.py` — explicit `create_runtime`, paths, lazy factories and writer lease acquisition.
 - `src/domain/` — data models and protocols.
-- `src/application/` — ApplicationAPI, command/query semantics, DTOs and queue coordinator.
+- `src/application/` — ApplicationAPI, command/query semantics, DTOs, queue coordinator and owned/borrowed runtime lifetime.
 - `src/interfaces/cli/` — existing CLI parser and transport bootstrap.
 - `src/infrastructure/` — yt-dlp, repositories, FFmpeg detection, MCP server.
 - `src/ui/` — PySide6 widgets, managers, theme, icons.
@@ -35,4 +36,5 @@ requested, not assumed complete from the existence of an API module.
 - Keep `AGENTS.md` as the required entry point and put detailed agent rules under `docs/agent-instructions/`.
 - Canonical testing/logging procedures remain in `.github/instructions/` and are linked
   from AGENTS; do not duplicate those policies under a second editable owner.
+- S1 and S2 are independently accepted for their bounded scopes; cancellation/outcome/pool schedules, safe deletion and complete adapter lifetime remain S3–S6, not already-implemented guarantees. See [verification](../command-first/VERIFICATION.md).
 - GUI layout/design is out of scope for the current command-first refactor.

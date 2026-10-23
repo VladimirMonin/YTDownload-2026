@@ -16,6 +16,7 @@ For runtime refactoring (including the command-first migration):
   not only help/discovery. Inspect actual state/results and relevant failure/cleanup.
 - Run and baseline-attribute `uv run --locked --no-sync mypy src/ --ignore-missing-imports`;
   full-project legacy findings remain visible, new owned type/lint failures require repair.
+- On a bounded repair, preserve the previous verdict/RED and verify unchanged source/assertion/environment applicability before reusing passed checks. Run the named delta regression and affected sibling gates, not full suite/type/foundation replays without new impact. A child smoke exit0 cannot replace competing-store preservation/no-lock and real cleanup evidence.
 - The assigned independent Pi Reviewer evaluates the frozen coherent candidate;
   author tests are not independent acceptance. GUI redesign and live YouTube E2E are out of scope.
 

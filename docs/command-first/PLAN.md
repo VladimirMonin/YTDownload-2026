@@ -9,7 +9,7 @@ areas: [architecture, application, adapters, testing, safety]
 summary: "Доработать существующий Application API и владельцев выполнения/хранения; подключить действующие CLI, MCP и GUI без нового интерфейса или демона."
 code_ref: "0abda8e2959b53561e8327f40c53118c944c94f8"
 code_verified_at: "2026-10-23"
-verification_scope: "Oracle исследовал исходную базу и baseline; независимо принят только S1. S2–S6 ниже остаются предстоящими, факты и пределы — в VERIFICATION.md."
+verification_scope: "Oracle исследовал исходную базу; независимо приняты S1 и S2 (включая R1 smoke isolation). S3–S6 ниже предстоящие; retained/fresh доказательства и пределы — VERIFICATION.md."
 related: [ytdl-command-first-contract, ytdl-project-philosophy, ytdl-pi-team]
 ---
 
@@ -124,7 +124,7 @@ C не нужен: нет редактируемого общего докуме
 
 # 4. Владельцы миграции
 
-Новые пути ниже — **предложенные**, сейчас не считать существующими. Не переносить файлы ради красоты; сохранять wrappers/imports, которыми реально пользуются consumers.
+Таблица — целевые owners всей миграции, не утверждение, что каждый уже готов. После S2 существуют bootstrap/runtime/download_rules/runtime_lock и связанные persistence/API seams; остальные будущие изменения отмечены срезами. Не переносить файлы ради красоты; сохранять wrappers/imports реальных consumers.
 
 | Ответственность | Целевой owner и совместимость |
 |---|---|
@@ -194,6 +194,8 @@ flowchart LR
 5. Synthetic orphan queued/downloading/merging → writable reopen → failed/INTERRUPTED, без backend; terminal и artifacts untouched. Read-only reopen ничего не переписывает.
 
 **Compatibility gate:** existing query tests, main.initialize_app keys/aliases, GUI/MCP discovery smokes. **Consumer:** S3 получает правильные lifecycle и persistence seams; S5 переключит реальные consumers без повторного проектирования.
+
+**Текущее disposition S2:** независимо ACCEPTED после узкого R1: новый YTDL_DATA_DIR теперь изолируется smoke owner-ом. Верифицированы construction/ports/lease/storage/recovery/settings и S2 resource lifetime. Initial refusal и RED сохранены; fresh delta/retained original proofs перечислены в [VERIFICATION](VERIFICATION.md). Это не S3 cancel/outcome/pool-schedule acceptance.
 
 ## S3 — Исправить выполнение, отмену, snapshot и terminal outcome
 
@@ -312,15 +314,16 @@ Logging privacy gate: synthetic URL/proxy/title/path/exception sentinels → н�
 
 # 7. Обновляемые знания и конкретные риски
 
-## Найденные поправки и состояние после S1
+## Найденные поправки и состояние после S2
 
 Oracle первоначально зафиксировал следующие gaps; текущий docs-sync не меняет его исторические receipts:
 
 - 02/04 и README: после S1 различены ручная установка пользователем и existing-env checks; smoke примеры — module-form/locked/no-sync с pre-import isolation. Canonical stdio module сохранён. Исходные CLI help examples ещё не переписаны (source вне S1); их согласование остаётся S5. Прежняя bare запись в документах помечена исторической, не рабочим install-рецептом.
 - Руководство: исправлены config/data locations и текущие defaults, объяснён default-True delete checkbox/legacy риск; после S4 ещё нужно заменить warning фактическими token/Trash/known-files/partial semantics, а не объявлять их реализованными сейчас.
 - Logging instruction после S1 описывает argument → nonempty env → fallback, фактические adapter streams и доказанные nonempty sinks. Privacy filter всё ещё не доказан; последующие изменённые runtime/adapter error paths требуют своего gate.
+- После S2 docs/instructions описывают create_runtime/YTDL_DATA_DIR, readonly snapshot/writer lease/recovery, detached settings/errors и фактические пределы close. Smoke helper явно изолирует новый root selector; R1 regression сохраняет competing store/artifacts/no-lock и restoration. Архитектурная root precedence не изменялась ради теста.
 - Engineering entry связан с PLAN/CONTRACT/VERIFICATION; исторический CLI/MCP план не второй текущий канон. Explicit checker corpus включает новые документы по authoring-схеме.
-- `tests/test_download_e2e.py` по-прежнему содержит старые service/coordinator arguments и слабые assertions; signature adaptation разрешена по impact в S2, **не** запуск/объявление live readiness. Нужны отдельные URL/разрешение. CI isolation/module invocation alignment остаётся S6.
+- `tests/test_download_e2e.py`: S2 выполнил только signature/factory/settings adaptation; прежние assertions/markers сохранены, тела live tests не исполнялись. Это **не** live readiness; нужны отдельные URL/разрешение. CI isolation/module invocation alignment остаётся S6.
 
 ## Риски и ограниченные решения
 
@@ -341,6 +344,6 @@ Oracle первоначально зафиксировал следующие ga
 
 **Done всей реализации:** S1–S5 реально выполнены; новый контракт соответствует коду/сериализации; адресные schedules и обязательные offline gates выполнены с raw exits/limits; новые errors отсутствуют; собственные ресурсы освобождены; документы согласованы; назначенный независимый Reviewer дал итоговый ACCEPTED для точных frozen bytes. Unverified live/OS/platform/package boundaries явно остаются NOT_RUN. Ни план, ни авторский PASS, ни discovery не являются этим Done. Каждый принятый срез затем сохраняется/публикуется тем же Reviewer в пределах отдельного grant; actual delivery и её возможный auth/CI blocker сообщаются отдельно от technical verdict.
 
-**Первоначальная передача S1 выполнена:** отдельная ветка создана, frozen кандидат независимо принят; факты — [VERIFICATION](VERIFICATION.md). Документы и selective доставка завершаются тем же Reviewer по действующему grant.
+**S1 и S2 независимо приняты:** S2-R1 закрыт на coherent successor; исходный refusal и все прежние доказательства сохранены. Факты и ограничения — [VERIFICATION](VERIFICATION.md). Документы и selective доставка завершаются тем же Reviewer по действующему grant, публикация/CI сообщаются отдельно.
 
-**Следующий шаг Hermes после disposition/delivery S1:** передать тому же Coder **S2** с CONTRACT и его точными границами, не начинать новый архитектурный survey или повторную приёмку неизменённого S1. Содержательные вопросы scope/lifetime/effects возвращаются Oracle; конкретные review defects — тому же Coder. Следующий результат — реализованный/проверенный frozen срез с фактическими exits, не новый план.
+**Следующий шаг Hermes после disposition/delivery S2:** передать тому же Coder **S3** с CONTRACT и его точными границами, не начинать новый архитектурный survey или повторную приёмку неизменённых S1/S2. Содержательные вопросы scope/lifetime/effects возвращаются Oracle; конкретные review defects — тому же Coder. Следующий результат — реализованный/проверенный frozen срез с фактическими exits, не новый план.

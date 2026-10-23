@@ -9,7 +9,7 @@ areas: [application, contracts, lifecycle, persistence, safety]
 summary: "Один прикладной владелец загрузок, честные принятие/завершение/отмена, безопасные файловые эффекты и совместимые адаптеры."
 code_ref: "0abda8e2959b53561e8327f40c53118c944c94f8"
 code_verified_at: "2026-10-23"
-verification_scope: "Исследована исходная база; ниже цель S2–S6, не уже реализованный контракт. Принятый S1 даёт только isolated baseline/log-root/fixtures/smokes, см. VERIFICATION.md."
+verification_scope: "S1 и S2 независимо приняты в ограниченном scope construction/ports/ownership/storage и smoke isolation. Ниже также цели S3–S6, не полностью реализованный контракт; fresh/retained evidence — VERIFICATION.md."
 related: [ytdl-command-first-plan, ytdl-project-philosophy]
 ---
 
@@ -44,7 +44,7 @@ Provider — Application API с одним coordinator, репозиториям
 
 ## 3.1 Сборка
 
-Предлагаемый owner сборки — `src/bootstrap.py::create_runtime`. Он принимает явный `data_root`, overrides настроек для synthetic исполнения и factories backend/file-remover, возвращает `src/application/runtime.py::ApplicationRuntime`. Environment читается **при сборке**, не при import. Достаточны keyword-only зависимости; универсальный DI framework не нужен.
+Owner сборки, реализованный в S2, — `src/bootstrap.py::create_runtime`. Он принимает явный `data_root`, overrides настроек для synthetic исполнения и factories backend/file-remover, возвращает `src/application/runtime.py::ApplicationRuntime`. Environment читается **при сборке**, не при import. Достаточны keyword-only зависимости; универсальный DI framework не нужен.
 
 - `data_root`: корень **YTDownloader**, содержащий `config/`, `data/`, `logs/`, а не сама подпапка `data`.
 - Приоритет: явный аргумент / CLI `--data-dir` → `YTDL_DATA_DIR` → существующий `%APPDATA%/YTDownloader` (при отсутствии APPDATA — `Path.home()/YTDownloader`).
@@ -60,13 +60,13 @@ JSON repositories остаются JSON, без миграции в SQL. Зап�
 
 Это защита от частично записанного JSON и потерянных обновлений внутри выбранного owner-а, **не** общая транзакция JSON+media+Recycle Bin и не гарантия против отказа диска/питания. `next_id` допускает пропуски после отказов, но не повторное использование уже выданного ID.
 
-Допустимые совместимые расширения `HistoryEntry`: `output_root` (snapshot root принятой работы), `artifact_paths` (точно известные результаты, в том числе нескольких элементов плейлиста), `error_code`. Старые файлы без них читаются с безопасными defaults; старая `output_dir` остаётся display/result folder, но **не полномочием удалить дерево**. Существующие поля/значения не переименовывать. Для playlist одиночные legacy media/sidecar fields по-прежнему представляют последний успешно обработанный элемент; полный известный набор — `artifact_paths`.
+S2 уже добавил backward-readable `output_root` и `error_code`; `artifact_paths`/полная attribution остаются S3. Допустимые совместимые расширения `HistoryEntry`: `output_root` (snapshot root принятой работы), `artifact_paths` (точно известные результаты, в том числе нескольких элементов плейлиста), `error_code`. Старые файлы без них читаются с безопасными defaults; старая `output_dir` остаётся display/result folder, но **не полномочием удалить дерево**. Существующие поля/значения не переименовывать. Для playlist одиночные legacy media/sidecar fields по-прежнему представляют последний успешно обработанный элемент; полный известный набор — `artifact_paths`.
 
 При открытии **exclusive writable owner**, после получения lease и успешного чтения, прежние `queued/downloading/merging` без живого исполнителя переводятся в `failed` с `error_code=INTERRUPTED`, безопасным объяснением и временем восстановления. Уже terminal записи не меняются. Никаких автоматических повторных загрузок, очистки `.part` или признания найденного файла успешным результатом. Неудача сохранения recovery блокирует mutable startup; read-only запрос может показать последний сохранённый snapshot с оговоркой об отсутствии live owner.
 
 # 4. Операции и queries
 
-Существующие методы сохраняются. Все concrete return types должны быть записаны в коде вместо текущих `Any`. В таблице — предложенная граница, а не второй машинный реестр.
+Существующие методы сохраняются. S2 типизировал command returns и добавил settings/history facade; task/wait/live DTO и безопасный delete ещё принадлежат S3–S5. В таблице — полная целевая граница, не список уже реализованных методов и не второй машинный реестр.
 
 | Operation | Вход/defaults | Результат / эффект |
 |---|---|---|
@@ -133,7 +133,7 @@ Live `get_download/list_downloads` используют authoritative task snaps
 
 ## 5.4 Освобождение
 
-Предлагаемый `ApplicationRuntime.close(*, cancel=True, wait=True) -> ShutdownResultDTO` идемпотентен. DTO содержит `closed: bool`, `pending_task_ids`, `persistence_error_ids`, `error_codes` (отделённые коллекции). Сначала закрывает admission; при cancel=True отменяет queued и сигнализирует active; wait=True дожидается собственных workers и записывает известные итоги, затем освобождает lease/owned handles. cancel=False — drain уже принятого, без новых admissions. wait=False возвращает состояние «ещё закрывается», а не completed cleanup; lease остаётся удержан до последнего writer-а. Финальный `close(wait=True)` обязателен у владельца процесса. `closed=True` означает освобождённые ресурсы, но не отменяет непустые persistence_error_ids/error_codes: entrypoint обязан сообщить ошибку/nonzero exit. При неполном cleanup closed=False, не ложный успех. Никакой `__del__`/interpreter exit не заменяет этот путь.
+В S2 появился `ApplicationRuntime.close(*, cancel=True, wait=True) -> ShutdownResultDTO` с owned/borrowed admission/join/lease гарантиями. Доказанный S2 drain — `cancel=False`; `wait=False` удерживает ownership до join. Полная cooperative cancellation/terminal consistency из следующих требований остаётся S3, а transport/GUI finally — S5. Целевой close идемпотентен. DTO содержит `closed: bool`, `pending_task_ids`, `persistence_error_ids`, `error_codes` (отделённые коллекции). Сначала закрывает admission; при cancel=True отменяет queued и сигнализирует active; wait=True дожидается собственных workers и записывает известные итоги, затем освобождает lease/owned handles. cancel=False — drain уже принятого, без новых admissions. wait=False возвращает состояние «ещё закрывается», а не completed cleanup; lease остаётся удержан до последнего writer-а. Финальный `close(wait=True)` обязателен у владельца процесса. `closed=True` означает освобождённые ресурсы, но не отменяет непустые persistence_error_ids/error_codes: entrypoint обязан сообщить ошибку/nonzero exit. При неполном cleanup closed=False, не ложный успех. Никакой `__del__`/interpreter exit не заменяет этот путь.
 
 GUI detach происходит в closeEvent; shutdown request неблокирующий. После возврата Qt loop `app.py` в finally останавливает/join-ит **свой** embedded HTTP handle, затем завершает runtime. Standalone server использует тот же finally. Уже занятые чужие порты/процессы не закрываются; прежняя ограниченная попытка следующих портов может сохраняться с явным фактическим endpoint. Ошибка bind не маскируется успехом.
 
@@ -223,4 +223,4 @@ Partial/unknown outcome — `CommandError` с `code=PARTIAL_DELETE` или `PERS
 
 До runtime acceptance должны быть выполнены connected proofs из [PLAN.md](PLAN.md): direct API без UI/SDK, реальные repositories/readback, детерминированные races отмены/быстрого завершения, реальный CLI subprocess, реальные MCP stdio tool calls на synthetic store, offscreen GUI bridge над тем же owner, cleanup/следующая операция, file preservation и реальные log sinks. Подменяются внешние сеть/yt-dlp и в основных tests системная Корзина, **не** Application API/coordinator/repository.
 
-Этот контракт не утверждает runtime PASS всей миграции. Историческая база Oracle: полный offline suite имел 3 failures. После узкого S1 независимо подтверждены 111 passed / 7 e2e deselected / 0 skips, path-selection/nonempty sinks и bounded smokes; подробности и сохранённые стадии — [VERIFICATION](VERIFICATION.md). Это не реализация runtime/lease/cancellation/safe delete/connected adapters из S2–S6. Live YouTube, Linux runtime, packaged EXE, native trash и ручная визуальная приёмка остаются NOT_RUN; статическое чтение и Markdown их не заменяют.
+Этот контракт не утверждает runtime PASS всей миграции. Историческая база Oracle имела 3 offline failures; S1 дал isolated baseline. При первоначальной независимой S2 проверке получены 38 focused / 149 full offline, реальные storage/import/lease proofs и inherited type34; это сохранённое evidence. Единственный S2-R1 затем закрыт на successor с неизменными core/assertions: fresh affected module30, реальный competing-profile control и four smokes/E,F,I passed. Подробные fresh/retained границы — [VERIFICATION](VERIFICATION.md). S3 cancellation/outcomes/pool schedules, S4 safe delete и S5 complete adapters ещё не реализованы/не приняты. Live YouTube, Linux runtime/CI, packaged EXE, native Trash и ручной визуальный GUI остаются NOT_RUN; Markdown их не заменяет.
