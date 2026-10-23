@@ -28,7 +28,7 @@ summary: "Канонические правила разработки, фило
 
 ## Рефакторинг command-first
 
-[PLAN](command-first/PLAN.md) и [CONTRACT](command-first/CONTRACT.md) подготовлены Oracle по исходной базе. Это план и предлагаемый поведенческий контракт, не сертификат реализации. Работа идёт в `refactor/command-first`; независимо приняты S1 (безопасный offline baseline) и S2 (construction/ports, runtime ownership, fail-closed persistence и исправленная smoke isolation). Полный будущий контракт этим не принят: cancellation/outcomes/pool schedules, safe delete и complete adapters остаются S3–S6. Фактические этапы и границы — [VERIFICATION](command-first/VERIFICATION.md); порядок документационного завершения и selective Git-доставки принятых срезов — [команда Pi](agent-team.md).
+[PLAN](command-first/PLAN.md) и [CONTRACT](command-first/CONTRACT.md) подготовлены Oracle по исходной базе. Это план и предлагаемый поведенческий контракт, не сертификат реализации. Работа идёт в `refactor/command-first`; независимо приняты S1 (offline baseline), S2 (construction/ports/storage) и S3 (cancellation/outcomes, pool lifetime, consistent snapshots и task-ID output attribution после R1/R2). Полный будущий контракт этим не принят: safe delete, complete adapters и final platform matrix остаются S4–S6. Фактические этапы и границы — [VERIFICATION](command-first/VERIFICATION.md); порядок документационного завершения и selective Git-доставки принятых срезов — [команда Pi](agent-team.md).
 
 [Прежний план CLI/MCP](cli_mcp_unification_plan.md) сохраняется как историческое основание; его описания «CLI ещё нет» не следует принимать за текущий факт.
 

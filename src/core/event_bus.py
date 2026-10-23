@@ -1,13 +1,9 @@
-"""Простая шина событий для cross-layer коммуникации.
-
-Классы:
-    EventBus
-        Синхронный publish-subscribe брокер событий.
-"""
+"""Synchronous notifications; state belongs to the publisher, never a subscriber."""
 
 from __future__ import annotations
 
 import logging
+import threading
 from collections import defaultdict
 from typing import Any, Callable
 
@@ -15,46 +11,29 @@ logger = logging.getLogger(__name__)
 
 
 class EventBus:
-    """Синхронный publish-subscribe брокер событий.
-
-    Используется для коммуникации между слоями без прямых зависимостей.
-    Коллбэки вызываются в потоке publisher — UI должен использовать Signal Bridge.
-    """
-
     def __init__(self) -> None:
         self._subscribers: dict[str, list[Callable[..., Any]]] = defaultdict(list)
+        self._lock = threading.Lock()
 
     def subscribe(self, event: str, callback: Callable[..., Any]) -> None:
-        """Подписывается на событие.
-
-        Args:
-            event: Имя события.
-            callback: Функция-обработчик.
-        """
-        self._subscribers[event].append(callback)
+        with self._lock:
+            self._subscribers[event].append(callback)
 
     def unsubscribe(self, event: str, callback: Callable[..., Any]) -> None:
-        """Отписывается от события.
-
-        Args:
-            event: Имя события.
-            callback: Функция-обработчик для удаления.
-        """
-        if event in self._subscribers:
+        with self._lock:
             try:
                 self._subscribers[event].remove(callback)
             except ValueError:
                 pass
 
     def publish(self, event: str, **kwargs: Any) -> None:
-        """Публикует событие всем подписчикам.
-
-        Args:
-            event: Имя события.
-            **kwargs: Данные события.
-        """
-        for callback in list(self._subscribers.get(event, [])):
+        with self._lock:
+            callbacks = tuple(self._subscribers.get(event, ()))
+        for callback in callbacks:
             try:
                 callback(**kwargs)
             except Exception:
-                logger.error("event.handler.failed event=%s", event, exc_info=True)
+                # Neither arbitrary event names, payloads nor exception chains are diagnostic data.
+                task_id = kwargs.get("task_id")
+                safe_id = task_id if type(task_id) is int and task_id > 0 else None
+                logger.error("event.handler.failed id=%s reason_code=SUBSCRIBER_FAILED", safe_id)

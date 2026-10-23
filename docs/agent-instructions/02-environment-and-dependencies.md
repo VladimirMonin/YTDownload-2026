@@ -23,6 +23,12 @@ explicit root → nonempty `YTDL_DATA_DIR` → nonempty APPDATA/YTDownloader →
 home/YTDownloader, then canonicalizes it. The root contains `config/settings.json`,
 `data/history.json` and `logs/`; output still defaults to home/Downloads/YTDownloader.
 `settings_overrides` are effective snapshots, not silently persisted settings.
+The real yt-dlp backend writes new results beneath
+`output_dir/download-<admitted task_id>/` with the existing title/playlist templates.
+The leased repository allocates monotonically distinct IDs; no second registry
+or cross-profile sharing is implied. AppSettings.output_dir and HistoryEntry.output_root
+retain the selected parent. Read actual returned/stored paths; never reconstruct ownership
+from titles or newest folders. Old records/files are not moved or deleted.
 
 Writable construction acquires the stdlib OS lease **before** mutable cache load,
 recovers orphan queued/downloading/merging records to failed/INTERRUPTED without
@@ -30,11 +36,19 @@ replay/media cleanup, and refuses a second writer with OWNER_BUSY. The lock file
 remains on unlock. Read-only construction creates no root/lease/executor/recovery
 and reads detached last-saved snapshots, not another process's live queue.
 
-Use `with create_runtime(...):` (drain on exit) or explicit
-`close(cancel=False, wait=True)` for the S2-proved join path. `wait=False` retains
-the lease until a real join; stale repository references cannot write after close.
-Borrowed wrappers never close caller-owned coordinator/resources. Full cooperative
-cancel/terminal consistency and new pool-cap-after-drain semantics remain S3.
+Use `with create_runtime(...):` for drain on exit, or explicit close: `cancel=False`
+drains; `cancel=True` removes queued work/signals active work cooperatively.
+`wait=False` is not completed cleanup and retains the lease until a real join;
+stale repositories cannot write after close. Borrowed wrappers never close the
+caller. Check ShutdownResultDTO even when closed=True: persistence_error_ids and
+error_codes may still report a physically completed but unsaved result. Blocking
+foreign calls have no hard stop deadline/rollback guarantee.
+
+S3 fixes the whole settings snapshot at admission. Updating settings cannot mutate
+A/B; a new pool cap applies only after the old futures/callbacks drain and its pool
+joins. Task/wait snapshots are detached; list/search selection, limit and mapping
+use the same captured entry/task pair. Unknown metrics are None, measured0 is0;
+legacy numeric bridge compatibility is not a measurement claim.
 Direct legacy JSON repository construction does **not** automatically acquire a
 runtime lease; its caller must own that policy. Atomic JSON is not a media+JSON
 transaction or a power-loss guarantee.

@@ -9,7 +9,7 @@ areas: [application, contracts, lifecycle, persistence, safety]
 summary: "Один прикладной владелец загрузок, честные принятие/завершение/отмена, безопасные файловые эффекты и совместимые адаптеры."
 code_ref: "0abda8e2959b53561e8327f40c53118c944c94f8"
 code_verified_at: "2026-10-23"
-verification_scope: "S1 и S2 независимо приняты в ограниченном scope construction/ports/ownership/storage и smoke isolation. Ниже также цели S3–S6, не полностью реализованный контракт; fresh/retained evidence — VERIFICATION.md."
+verification_scope: "S1–S3 независимо приняты, включая cancellation/outcomes/projection/task attribution и R1/R2 repair. Ниже также цели S4–S6, не полностью реализованный контракт; fresh/retained evidence — VERIFICATION.md."
 related: [ytdl-command-first-plan, ytdl-project-philosophy]
 ---
 
@@ -60,13 +60,24 @@ JSON repositories остаются JSON, без миграции в SQL. Зап�
 
 Это защита от частично записанного JSON и потерянных обновлений внутри выбранного owner-а, **не** общая транзакция JSON+media+Recycle Bin и не гарантия против отказа диска/питания. `next_id` допускает пропуски после отказов, но не повторное использование уже выданного ID.
 
-S2 уже добавил backward-readable `output_root` и `error_code`; `artifact_paths`/полная attribution остаются S3. Допустимые совместимые расширения `HistoryEntry`: `output_root` (snapshot root принятой работы), `artifact_paths` (точно известные результаты, в том числе нескольких элементов плейлиста), `error_code`. Старые файлы без них читаются с безопасными defaults; старая `output_dir` остаётся display/result folder, но **не полномочием удалить дерево**. Существующие поля/значения не переименовывать. Для playlist одиночные legacy media/sidecar fields по-прежнему представляют последний успешно обработанный элемент; полный известный набор — `artifact_paths`.
+S2 добавил backward-readable `output_root`/`error_code`, S3 — `artifact_paths` и подтверждённую принадлежность результатов текущей задачи. Допустимые совместимые расширения `HistoryEntry`: `output_root` (snapshot root принятой работы), `artifact_paths` (точно известные результаты, в том числе нескольких элементов плейлиста), `error_code`. Старые файлы без них читаются с безопасными defaults; старая `output_dir` остаётся display/result folder, но **не полномочием удалить дерево**. Существующие поля/значения не переименовывать. Для playlist одиночные legacy media/sidecar fields по-прежнему представляют последний успешно обработанный элемент; полный известный набор — `artifact_paths`.
 
 При открытии **exclusive writable owner**, после получения lease и успешного чтения, прежние `queued/downloading/merging` без живого исполнителя переводятся в `failed` с `error_code=INTERRUPTED`, безопасным объяснением и временем восстановления. Уже terminal записи не меняются. Никаких автоматических повторных загрузок, очистки `.part` или признания найденного файла успешным результатом. Неудача сохранения recovery блокирует mutable startup; read-only запрос может показать последний сохранённый snapshot с оговоркой об отсутствии live owner.
 
+Реализованная S3 naming delta: реальный yt-dlp backend использует
+`settings.output_dir.resolve()/download-<admitted task_id>/` как корень своей
+попытки. Внутри него сохранены title/playlist templates и quality format selection.
+Числовой ID резервируется единственным leased owner до backend admission и не
+переиспользуется; отдельный path registry не вводится. AppSettings.output_dir и
+HistoryEntry.output_root остаются выбранным parent root. Разные задачи не делят
+одноимённые media/sidecars; поля результата/истории содержат actual absolute paths,
+а не вычисление по title. Старые записи/файлы не перемещаются и не очищаются. Это
+текущая гарантия S3 после R2, не отложенное обещание S4 и не sandbox/согласование
+общего output разных profiles (ограничение §2 сохраняется).
+
 # 4. Операции и queries
 
-Существующие методы сохраняются. S2 типизировал command returns и добавил settings/history facade; task/wait/live DTO и безопасный delete ещё принадлежат S3–S5. В таблице — полная целевая граница, не список уже реализованных методов и не второй машинный реестр.
+Существующие методы сохраняются. S2 типизировал commands/settings/history facade, S3 реализовал task/wait/live DTO и согласованные selection snapshots. Safe delete/полные adapters ещё S4/S5. В таблице — полная целевая граница, не обещание готовности всех будущих операций и не второй машинный реестр.
 
 | Operation | Вход/defaults | Результат / эффект |
 |---|---|---|
@@ -116,6 +127,8 @@ S2 уже добавил backward-readable `output_root` и `error_code`; `artif
 - Backend учитывает фактический результат yt-dlp и postprocessing. Артефакты получаются из **этой** попытки/явно подтверждённого результата yt-dlp. `_find_newest_folder(output_root)` не источник принадлежности. Не сканировать чужое дерево ради заполнения пустого результата. Existing final files не перезаписывать молча; совпадение заголовка не доказывает, что файл принадлежит текущему видео.
 - Сбой terminal persistence не скрывается. Live snapshot сообщает `result_persisted=False`, `error_code=PERSISTENCE_FAILED` и известные артефакты; `download.done` не публикуется. Физически закончившийся backend и сохранённый результат различаются. Runtime close может освободить ресурсы, но обязан вернуть/пробросить итоговую ошибку, не «всё сохранено».
 
+В принятом S3 list/search несут одну detached пару entry/task через projection → query/status selection → limit → mapping: mapper не читает live state заново. Snapshot может устареть после capture, но его выбранные status/title/flags/artifacts не подменяются другой версией после фильтрации. Legacy/query-only shapes и None/0 различия сохраняются.
+
 Live `get_download/list_downloads` используют authoritative task snapshot поверх last-saved record и добавляют nullable `cancel_requested`, `result_persisted`, `error_code`. Read-only process видит только last-saved JSON, без выдуманного live прогресса. После завершения процесса память/unsaved outcome не восстанавливаются; recovery §3 не обещает восстановить потерянные пути.
 
 ## 5.3 Отмена
@@ -133,7 +146,7 @@ Live `get_download/list_downloads` используют authoritative task snaps
 
 ## 5.4 Освобождение
 
-В S2 появился `ApplicationRuntime.close(*, cancel=True, wait=True) -> ShutdownResultDTO` с owned/borrowed admission/join/lease гарантиями. Доказанный S2 drain — `cancel=False`; `wait=False` удерживает ownership до join. Полная cooperative cancellation/terminal consistency из следующих требований остаётся S3, а transport/GUI finally — S5. Целевой close идемпотентен. DTO содержит `closed: bool`, `pending_task_ids`, `persistence_error_ids`, `error_codes` (отделённые коллекции). Сначала закрывает admission; при cancel=True отменяет queued и сигнализирует active; wait=True дожидается собственных workers и записывает известные итоги, затем освобождает lease/owned handles. cancel=False — drain уже принятого, без новых admissions. wait=False возвращает состояние «ещё закрывается», а не completed cleanup; lease остаётся удержан до последнего writer-а. Финальный `close(wait=True)` обязателен у владельца процесса. `closed=True` означает освобождённые ресурсы, но не отменяет непустые persistence_error_ids/error_codes: entrypoint обязан сообщить ошибку/nonzero exit. При неполном cleanup closed=False, не ложный успех. Никакой `__del__`/interpreter exit не заменяет этот путь.
+Принятые S2/S3 реализуют `ApplicationRuntime.close(*, cancel=True, wait=True) -> ShutdownResultDTO`: owned/borrowed admission/join/lease, cooperative queued/active cancellation и terminal consistency. `wait=False` удерживает ownership до реального join. Transport/GUI finally ещё S5; это не hard stop deadline внешнего blocking call. Close идемпотентен. DTO содержит `closed: bool`, `pending_task_ids`, `persistence_error_ids`, `error_codes` (отделённые коллекции). Сначала закрывает admission; при cancel=True отменяет queued и сигнализирует active; wait=True дожидается собственных workers и записывает известные итоги, затем освобождает lease/owned handles. cancel=False — drain уже принятого, без новых admissions. wait=False возвращает состояние «ещё закрывается», а не completed cleanup; lease остаётся удержан до последнего writer-а. Финальный `close(wait=True)` обязателен у владельца процесса. `closed=True` означает освобождённые ресурсы, но не отменяет непустые persistence_error_ids/error_codes: entrypoint обязан сообщить ошибку/nonzero exit. При неполном cleanup closed=False, не ложный успех. Никакой `__del__`/interpreter exit не заменяет этот путь.
 
 GUI detach происходит в closeEvent; shutdown request неблокирующий. После возврата Qt loop `app.py` в finally останавливает/join-ит **свой** embedded HTTP handle, затем завершает runtime. Standalone server использует тот же finally. Уже занятые чужие порты/процессы не закрываются; прежняя ограниченная попытка следующих портов может сохраняться с явным фактическим endpoint. Ошибка bind не маскируется успехом.
 
@@ -219,8 +232,8 @@ Partial/unknown outcome — `CommandError` с `code=PARTIAL_DELETE` или `PERS
 
 # 8. Совместимость и доказательство
 
-Сохраняются входы, десять MCP tools, old result keys, JSON locations/форматы, theme/layout и назначения GUI controls. Обоснованные изменения поведения: writer lease вместо потерянных updates; явное ожидание standalone CLI; отказ standalone cancel без owner; cancellation request вместо преждевременного terminal; fail-closed storage; no empty success; file-only Trash+plan token вместо recursive permanent deletion. Это обязательная миграционная дельта, не маскируемая словом «рефакторинг».
+Сохраняются входы, десять MCP tools, old result keys, JSON locations/форматы, theme/layout и назначения GUI controls. S3-R2 намеренно добавляет task-ID prefix новым backend paths (§3.2); paths старых записей остаются читаемыми, полагаться на прежнее расположение новых файлов по title нельзя. Обоснованные изменения поведения: writer lease вместо потерянных updates; явное ожидание standalone CLI; отказ standalone cancel без owner; cancellation request вместо преждевременного terminal; fail-closed storage; no empty success; file-only Trash+plan token вместо recursive permanent deletion. Это обязательная миграционная дельта, не маскируемая словом «рефакторинг».
 
 До runtime acceptance должны быть выполнены connected proofs из [PLAN.md](PLAN.md): direct API без UI/SDK, реальные repositories/readback, детерминированные races отмены/быстрого завершения, реальный CLI subprocess, реальные MCP stdio tool calls на synthetic store, offscreen GUI bridge над тем же owner, cleanup/следующая операция, file preservation и реальные log sinks. Подменяются внешние сеть/yt-dlp и в основных tests системная Корзина, **не** Application API/coordinator/repository.
 
-Этот контракт не утверждает runtime PASS всей миграции. Историческая база Oracle имела 3 offline failures; S1 дал isolated baseline. При первоначальной независимой S2 проверке получены 38 focused / 149 full offline, реальные storage/import/lease proofs и inherited type34; это сохранённое evidence. Единственный S2-R1 затем закрыт на successor с неизменными core/assertions: fresh affected module30, реальный competing-profile control и four smokes/E,F,I passed. Подробные fresh/retained границы — [VERIFICATION](VERIFICATION.md). S3 cancellation/outcomes/pool schedules, S4 safe delete и S5 complete adapters ещё не реализованы/не приняты. Live YouTube, Linux runtime/CI, packaged EXE, native Trash и ручной визуальный GUI остаются NOT_RUN; Markdown их не заменяет.
+Этот контракт не утверждает runtime PASS всей миграции. Исторические Oracle/S1/S2 результаты сохранены в [VERIFICATION](VERIFICATION.md). S3 независимо принят после двух source findings: текущие original/adapted controls, five repaired cases и51 affected cases passed; прежние82/177/full-mypy34/four smokes применимо retained, не новые прогоны/суммы. Scoped type2 PASS не отменяет inherited global raw1/34 findings. S4 safe delete, S5 complete adapters и S6 final matrix ещё не реализованы/не приняты. Live YouTube, codec quality, Linux runtime/CI, packaged EXE, native Trash, whole legacy privacy и ручной визуальный GUI — NOT_RUN; Markdown их не заменяет.

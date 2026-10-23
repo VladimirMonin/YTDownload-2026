@@ -36,5 +36,5 @@ requested, not assumed complete from the existence of an API module.
 - Keep `AGENTS.md` as the required entry point and put detailed agent rules under `docs/agent-instructions/`.
 - Canonical testing/logging procedures remain in `.github/instructions/` and are linked
   from AGENTS; do not duplicate those policies under a second editable owner.
-- S1 and S2 are independently accepted for their bounded scopes; cancellation/outcome/pool schedules, safe deletion and complete adapter lifetime remain S3–S6, not already-implemented guarantees. See [verification](../command-first/VERIFICATION.md).
+- S1–S3 are independently accepted for their bounded scopes, including owned cancellation/outcomes, consistent query projections and task-scoped output attribution. Safe deletion and complete adapter lifetime/platform qualification remain S4–S6, not already-implemented guarantees. See [verification](../command-first/VERIFICATION.md).
 - GUI layout/design is out of scope for the current command-first refactor.

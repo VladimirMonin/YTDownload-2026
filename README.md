@@ -6,8 +6,9 @@
 
 Разработка: [AGENTS.md](AGENTS.md), [инженерная документация](docs/engineering.md),
 [философия command-first](docs/foundation/project-philosophy.md). Исходный GUI
-сохраняется. Независимо приняты S1 (isolated baseline) и S2 (runtime/ports,
-владение хранилищем, fail-closed JSON и smoke isolation). S3–S6 ещё
+сохраняется. Независимо приняты S1–S3: isolated baseline, runtime/storage,
+cooperative cancellation, truthful outcomes/snapshots и task-ID output attribution.
+S4–S6 (safe delete, complete adapters, final matrix) ещё
 не реализованы/не приняты: [план](docs/command-first/PLAN.md),
 [предлагаемый контракт](docs/command-first/CONTRACT.md),
 [фактическая проверка и ограничения](docs/command-first/VERIFICATION.md).
@@ -21,9 +22,9 @@
 | 📥 Загрузка видео и плейлистов | Best / 1080p / 720p / 480p / Audio Only |
 | 🎵 Audio Only | Извлечение аудиодорожки в .m4a через FFmpeg |
 | 📝 Субтитры | Скачивание .vtt/.srt (с выбором языка) |
-| 🖼️ Обложка | Загрузка thumbnail .webp |
-| 📄 Описание | Сохранение description.txt |
-| 📁 Структура папок | `OutDir/PlaylistName/001 - Title/video.mp4 + ...` |
+| 🖼️ Обложка | Сохранённая thumbnail, формат по факту |
+| 📄 Описание | Sidecar `.description`, если сохранён |
+| 📁 Структура папок | `OutDir/download-<task_id>/PlaylistName/001 - Title/Title.ext` |
 | 🕒 История | JSON-база всех загрузок с поиском |
 | 🌙 Dark / Light тема | Переключение в один клик |
 | ⚙️ Настройки | Папка, прокси, качество, язык субтитров |
@@ -274,22 +275,30 @@ npx @modelcontextprotocol/inspector http://127.0.0.1:8765/mcp
 ## 📂 Структура загрузок
 
 ```
-output_dir/                         # Настраивается в Settings
-├── PlaylistName/                   # Для плейлистов
-│   ├── 001 - VideoTitle/
-│   │   ├── 001 - VideoTitle.mp4   # Смонтированное видео
-│   │   ├── 001 - VideoTitle.info.json
-│   │   ├── 001 - VideoTitle.description
-│   │   ├── 001 - VideoTitle.webp  # Thumbnail
-│   │   └── 001 - VideoTitle.ru.vtt  # Субтитры
-│   └── 002 - VideoTitle/
-│       └── ...
-└── VideoTitle/                     # Для одиночных видео
-    ├── VideoTitle.mp4
-    └── ...
+output_dir/                         # Выбранный root; default home/Downloads/YTDownloader
+├── download-42/                    # ID одной принятой задачи-плейлиста
+│   └── PlaylistName/
+│       ├── 001 - VideoTitle/
+│       │   ├── VideoTitle.mp4      # Пример media; фактическое расширение зависит от результата
+│       │   ├── VideoTitle.info.json
+│       │   ├── VideoTitle.description
+│       │   ├── VideoTitle.webp     # Если thumbnail сохранён
+│       │   └── VideoTitle.ru.vtt   # Если subtitles сохранены
+│       └── 002 - OtherTitle/
+│           └── ...
+└── download-43/                    # Другой task, даже если title совпадает
+    └── VideoTitle/
+        ├── VideoTitle.mp4
+        └── ...
 ```
 
 ---
+
+Новые результаты реального yt-dlp backend размещаются под `download-<task_id>`:
+разные admissions не присваивают друг другу одноимённые файлы. Старые files/history
+не перемещаются; доверяйте возвращённым `artifact_paths`/legacy path fields, не
+вычисляйте принадлежность по названию или newest folder. Это не разрешение удаления
+всего дерева и не координация общего output между отдельными profiles.
 
 ## 🏗️ Архитектура
 
@@ -330,7 +339,7 @@ uv run --locked --no-sync ruff check --select E,F,I <changed-python-files>
 ```
 
 Подставить непустой список изменённых Python-файлов. Полный lint/type baseline
-не равен changed-file gate: после S2 mypy остаётся exit1 с 34 унаследованными ошибками/15 файлами;
+не равен changed-file gate: глобальный mypy после S3 остаётся inherited exit1 с 34 унаследованными ошибками/15 файлами;
 подробности — [VERIFICATION](docs/command-first/VERIFICATION.md). Live E2E требует
 отдельного явного разрешения с конкретным URL; примеры в руководстве его не дают.
 Изменения только документации требуют affected checks, не автоматического повторения suite.
@@ -357,11 +366,28 @@ Read-only создаёт detached last-saved snapshot, не папку/lease/exe
 не подключение к чужой живой очереди. Writable runtime сначала берёт exclusive lease
 на canonical root; второй writer получает OWNER_BUSY. При writable reopen orphan
 queued/downloading/merging становятся failed/INTERRUPTED без replay/очистки media.
-Закрывайте принадлежащий caller-у runtime: context manager делает drain; явный S2
-join — `close(cancel=False, wait=True)`. `wait=False` не освобождает lease до join.
-Borrowed wrapper не закрывает caller. Полная cooperative cancellation/outcome модель
-ещё S3, standalone adapter lifetime/read-only CLI mode — S5; `--data-dir` пока не
-добавлен в parser. Отдельные процессы с одной библиотекой не разделяют live queue.
+Закрывайте принадлежащий caller-у runtime: context manager делает drain;
+`close(cancel=False, wait=True)` ждёт принятое, `cancel=True` запрашивает cooperative
+stop. `wait=False` не означает closed и удерживает lease до реального join.
+Borrowed wrapper не закрывает caller. Standalone adapter lifetime/read-only CLI
+mode остаётся S5; `--data-dir` пока не добавлен в parser. Отдельные процессы с
+одной библиотекой не разделяют live queue.
+
+В S3 `queue_add_download` возвращает принятие, не файл. `get_task` и
+`wait_for_download(id, timeout=...)` дают detached snapshots; timeout прекращает
+ожидание, не Job. `cancel_requested` — intent; running task становится cancelled
+только после quiescence управляемого backend. Независимая ошибка остаётся failed,
+а done требует подтверждённого media и сохранения. Known partial files не удаляются.
+При terminal save failure live snapshot содержит PERSISTENCE_FAILED,
+result_persisted=False и известные paths, readonly reader — лишь last-saved JSON.
+Даже `closed=True` требует проверки `error_codes`/`persistence_error_ids`.
+Нет hard stop deadline, Undo или media+JSON transaction.
+
+List/search накладывают live facts до selection/limit и маппят ту же captured пару;
+результат может устареть после capture, но не менять статус после фильтрации.
+Unknown progress/speed/eta — None; измеренный0 остаётся0. Settings целиком фиксируются
+при admission: update не меняет A/B; новый pool cap применяется только после drain
+старой очереди/futures/callbacks, без двух работающих поколений.
 
 `get_settings()` возвращает копию; `update_settings()` сохраняет до публикации
 новых defaults. Overrides при construction сами по себе не записываются. JSON

@@ -10,8 +10,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
+from pathlib import Path
 
 from .app_settings import DownloadType, QualityOption
+from .download_outcome import DownloadOutcome
 
 
 class DownloadStatus(str, Enum):
@@ -84,3 +86,13 @@ class DownloadTask:
     eta_seconds: int = 0
     error_message: str = ""
     created_at: datetime = field(default_factory=datetime.now)
+    cancel_requested: bool = False
+    result_persisted: bool | None = None
+    error_code: str | None = None
+    artifact_paths: list[Path] = field(default_factory=list)
+    output_root: Path | None = None
+    outcome: DownloadOutcome | None = None
+    measured_progress: float | None = None
+    measured_speed: float | None = None
+    measured_eta: int | None = None
+    finished_at: datetime | None = None

@@ -1,7 +1,7 @@
 """Explicit application lifetime and owned/borrowed resources, without OS/SDK choices.
 
-S2 can drain/join and retain a lease while closing. Cooperative cancellation,
-terminal outcome snapshots and pool-generation schedules are completed in S3.
+The coordinator owns cooperative cancellation and terminal persistence. This owner
+closes admission, joins its executor, reports persistence debt and releases resources.
 """
 
 from __future__ import annotations
@@ -137,9 +137,10 @@ class ApplicationRuntime:
     def close(self, *, cancel: bool = True, wait: bool = True) -> ShutdownResultDTO:
         """Close admission, then drain/join before resource release.
 
-        cancel=True still uses the legacy cancel path; S2 does NOT certify its
-        state consistency. wait=False retains ownership until a later join.
-        Borrowed wrappers close only themselves, never their caller's coordinator.
+        cancel=True signals active work and cancels queued work through its owner.
+        wait=False retains ownership until a later real join. Persistence errors
+        remain visible even after resources close. Borrowed wrappers never close
+        their caller's coordinator.
         """
         self._mark_closing()
         if self.coordinator is not None and self._owns_coordinator:

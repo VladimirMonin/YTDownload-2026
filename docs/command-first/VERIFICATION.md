@@ -446,3 +446,260 @@ native Trash, Linux runtime/CI, package/EXE, manual/visual GUI, forced rollover 
 полная legacy privacy-chain — NOT_RUN. Документационное завершение выполняет тот же
 Reviewer; actual commit/push/ref readback и remote CI сообщаются отдельно, без
 выдуманного CI PASS. Следующий разрешённый срез выбирает оркестратор после release.
+
+# S3 — авторское выполнение / cancellation / outcomes
+
+**READY_FOR_REVIEW, не независимый ACCEPTED.** База — принятый и опубликованный S2
+`5772f8fc4def3e6ed17f20787b0ebc276b765abe` в `refactor/command-first`. Предшествующие
+отчёты/отказы/RED/accepted stages неизменны; весь прежний этот файл — byte prefix.
+Coder не stage/commit/push. Тот же Reviewer должен независимо принять coherent S3,
+после чего завершить affected docs/instructions и разрешённую selective доставку.
+
+## Реализованные owners и совместимость
+
+- Coordinator регистрирует token/record до submit. Admission gate допускает worker
+  после queued notifications и future registration; wait включает worker return и
+  callbacks. Cancel running — intent, terminal только после quiescence. Completion
+  и cancel сериализованы; независимый failed не маскируется token-ом. Late progress
+  не меняет terminal. Повторный cancelled идемпотентен, done/failed — conflict.
+- Один executor до полного drain, следующий cap применяется к следующему admission
+  после реального join старого pool. Полный detached settings snapshot фиксирован
+  при приёме; backend получает отдельные phase copies. Network/service calls и
+  EventBus callbacks вне coordination locks. Subscriber failures изолированы.
+- Единственный IDownloadService теперь возвращает domain DownloadOutcome с typed
+  completed/cancelled/failed, known paths и safe code; legacy path accessor сохранён.
+  Existing injected path maps поддержаны с той же строгой media validation, empty
+  не success. Форматные строки/URL semantics backend сохранены. Newest-folder и
+  directory-scan attribution удалены. Attribution — hooks этой попытки, explicit
+  postprocessed media и exact sidecars; existing ambiguous final files отказаны,
+  leftovers/known partial files не удаляются. Playlist partial сохраняет известные
+  результаты, а не объявляется done/отсутствием эффекта.
+- Штатный yt-dlp DownloadCancelled проходит настоящий ignoreerrors/playlist guard;
+  match/PP/progress boundaries проверяют token. Финальный file hook сохраняет факт
+  эффекта, не бросает cancellation в SDK guard, объявляющий любую Exception failure.
+- Terminal done только после save. После media-effect/save-failure live query/task
+  сообщает failed/PERSISTENCE_FAILED/result_persisted=False/known files, done event
+  отсутствует; close возвращает persistence debt и всё же освобождает ресурсы.
+- API добавляет detached task/wait DTO и authoritative status/artifact overlays.
+  Новые nullable measurements отличают неизвестное от реального0; legacy bridge
+  получает числа. Старый query-only facade не требует coordinator. Exact legacy
+  wire keys сохранены, если новых execution facts нет; known False/[]/errors не
+  скрываются. HistoryEntry расширен только artifact_paths с backward read default.
+  Старые runtime/characterization/ytdlp-unit tests не переписаны/не ослаблены.
+
+## Реальные owner schedules, не success-fakes ядра
+
+| Требование | Проверенный путь / наблюдение |
+|---|---|
+| Max1 A blocked fetch, B queued; cancelB | Public API → настоящий coordinator/JSON; B backend не вызывается, task/history cancelled; A history остаётся downloading до release |
+| CancelA blocked fetch / до service registration | Immediate cancel_requested, timeout wait не отменяет/не терминализует; после release нет download stage, wait/readback cancelled; следующий useful task done |
+| Immediate / completion-before-cancel / cancel-before-completion | queued→started→persisted done, ALREADY_TERMINAL; обратный порядок cancelled с retained file; independent failed остаётся failed; callbacks drained, late progress не воскресил task |
+| Empty/foreign и distinct outputs / playlist / postprocessing | Настоящие owned bytes/JSON/readback; foreign newer bytes не меняются; real YtDlpService с fake YoutubeDL edge, final audio hooks и two-item complete/partial playlist через API |
+| Terminal replace failure после media bytes | Единственная fault на actual os.replace; file retained, no done, live PF/False, next admission работает, close debt виден |
+| Update settings при A/B | A/B output/proxy/options прежние, C новые при старом cap1; после drain D/E одновременно при cap2, no overlapping active generations |
+| Active+queued close / повтор / subscriber / admission | wait=False удерживает lease, запросы/terminal честные, wait=True join, повтор safe, subscriber exception/другой thread reader не блокируют owner, новый runtime того же root |
+
+Дополнительно executor submission refusal сохраняет known id/failed state и не
+оставляет stale pending; history-only cancel/preview/wait требуют OWNER_REQUIRED.
+Основные schedules сохраняют настоящие repositories/files/JSON. Подмена — внешний
+backend/yt-dlp; terminal storage fault — узкий OS replace отказ, executor fault —
+только refusal на native submission boundary. API/queue/repos не заменены успехом.
+
+## Final-byte fresh gates
+
+| Команда | Raw exit | Факт |
+|---|---:|---|
+| Addressed lifecycle/outcome/runtime/characterization/unit/query set | 0 | **82 passed**,0 skips |
+| `uv run --locked --no-sync pytest tests/ -m "not e2e" -q -rs` | 0 | **177 passed,7 deselected,0 skips** |
+| `uv run --locked --no-sync ruff check --select E,F,I` +13 actual changed Python files | 0 | All checks passed |
+| `uv run --locked --no-sync mypy src/ --ignore-missing-imports` | **1** | **34 errors/15 files**,66 checked; exact previous34 location/cause rows, new0/removed0; не type PASS |
+| Четыре module smokes через locked/no-sync | 0 каждый | CLI help5, MCP10, actual stdio discovery/EOF, offscreen GUI; не S5 tool-effect/lifetime acceptance |
+| Read-only source/assertion/node/native/sink/type audit | 0 | Final Python bytes совпадают с source receipts; два meaningful RED AST сохранены, старые три test files exact |
+
+Прогоны перекрываются, counts не суммируются. Полный gate оправдан общим worker/
+backend/DTO/EventBus изменением, а не повторной приёмкой S1/S2. Сохранены: первый
+fixture TypeError settings_overrides, затем genuine Oracle queued-cancel RED;
+ранние owned lint errors, два incomplete fake-YoutubeDL API failures, один exact
+legacy wire-shape failure и full query-only4 failures. Все исправлены у указанного
+owner/fixture без ослабления assertions. Отдельный meaningful SDK-guard cancel RED
+стал GREEN на том же oracle после source fix. Historical raw receipts не затёрты.
+
+До collection/imports/children назначены synthetic home/appdata/temp/cache/log/
+output/data-root, включая исправленный S2-R1 smoke override. Existing Python3.14.2,
+offline/no-sync/no-download/no-bytecode/UTF8/offscreen, audited plugins, абсолютный
+forward-slash basetemp проверен. Outer100s own Job supervisor наблюдал native exits;
+watchdog не срабатывал, live own PID до Job close0. Barriers отпущены/join в finally,
+partial setup/failure paths не оставляют owned executors/leases/children. Реальные
+nonempty main/error files и stderr changed coordinator/backend/EventBus emitters
+содержат useful id/codes и не содержат synthetic URL/content/path/exception markers;
+stdout diagnostic child пуст. Это не full legacy/third-party privacy certification.
+
+**NOT_RUN:** independent S3 acceptance/publication/remote CI, S4/S5/S6, live YouTube/
+network E2E (семь исходных e2e cases deselected), native Trash, managed HTTP/app.py,
+Linux runtime/CI, packaging/EXE/manual visual GUI, full Ruff и legacy privacy audit.
+Synthetic marker media подтверждает attribution/retention, не codecs/quality live
+YT result. Cooperative cancellation не обещает bounded stop или media rollback.
+Исходные S1/S2/Oracle artifacts и принятое несвязанное поведение сохранены. Кандидат
+и source/test/resources передаются тому же Reviewer; S4 не начинается.
+
+# S3 repair-01 — R1/R2 после независимого NEEDS_CHANGES
+
+Исходный14-path S3 получил независимый **whole-S3 NEEDS_CHANGES**: повторный
+post-filter live overlay нарушал status selection (R1); native yt-dlp skip-existing
+с final hook присваивал B файл одновременно работающей A (R2). Оба исходных causal
+raw1, включая actual SDK guard, сохранены неизменными; ранние same-title setup
+failures не объявлены attribution RED и не переисполнялись. Ни один прежний этап
+этого файла не переписан. Следующее — **авторский repair READY_FOR_REVIEW**, не
+независимый whole-S3 ACCEPTED и не разрешение Coder на Git-доставку.
+
+Узкая дельта: только API, yt-dlp service, два существующих S3 test files и этот append.
+Coordinator и остальные cumulative S3/base bytes сохранены. API несёт одну detached
+пару entry/task через projection→query/status selection→limit→DTO, не читает live
+state заново в mapper. Public сигнатуры/legacy wire/query-only/nullable facts прежние.
+
+Backend выводит файлы внутри `output_root/download-<task_id>/…` и принимает known
+paths только из этого пространства. Existing leased owner уже выдаёт разные IDs
+разным admissions; root/settings/format selection/URL и legacy result fields не
+перепроектированы. Различные задачи не делят check→effect→final-hook destination;
+A path не становится B artifact даже при failed/cancelled. Это private naming внутри
+заданного output, без locks вокруг network, нового registry/queue, overwrite/delete
+или миграции старой истории. Между отдельными profiles по-прежнему нужны раздельные
+output roots согласно CONTRACT, общей межпроцессной очереди не добавлено.
+
+| Fresh repair proof | Raw | Наблюдение |
+|---|---:|---|
+| Исходный live-filter control, только новый owned root | 0 | Непустой filtered row остаётся downloading; ordinary worker уже done/persisted, полезный следующий task/JSON/readback/close |
+| Новый copied same-title observer с явно сохранённым source diff | 0 | Native B теперь True/True, физические A+B эффекты, оба done/persisted с независимыми paths, bytes A сохранены |
+| Пять connected R1/R2 pytest cases | 0 | Status/search mapper interleaving; native same-title complete/cancelled/failed, own partial retention и no foreign intersection |
+| Whole lifecycle/outcome/query/characterization/history-CLI modules + два directly affected runtime consumers + format-string class | 0 | **51 passed**,0 skips; no API/queue/repository success-fakes |
+| `ruff check --select E,F,I` четырёх actual changed Python files через locked/no-sync | 0 | All checks passed |
+| `mypy` только api.py/ytdlp_service.py, `--follow-imports=silent --ignore-missing-imports` через locked/no-sync | 0 | Два owned source files без findings; не global type PASS |
+
+R2 observer не форсирует устранённый same-path skip checkpoint: после независимого
+naming правильная проверка — genuine B effect/bytes и native success/download=True,
+а прежний no-shared-attribution invariant сохранён. SDK processing/format selection/
+FileDownloader.download no-overwrite guard/final hooks не переписаны. Три native
+pytest schedules проверяют также cancelled/failed B с собственными retained partial
+bytes, без paths A, настоящим owner/JSON/reopen и finally release/join.
+
+Пути старых test fixtures скорректированы только под новый private output prefix;
+позитивные postprocessing/playlist/cancel/error assertions не ослаблены. Whole affected
+набор повторяет meaningful original schedules и actual sink proof, counts51/5 не
+суммируются. Scope/reference/source/assertion/native receipts сохранены отдельно от Git.
+
+Прежние независимые82/177/four smokes/type34 остаются **retained**, не fresh replays:
+новые R1/R2 и affected consumers проверены выше; неизменные coordinator/runtime/
+storage/DTO/events/import/lifetime boundaries сверены по exact source/assertion
+identity. Public API signatures, transports/bootstrap/smoke scripts/DTO не менялись;
+проверки help/discovery/offscreen не достигают изменённых query mapper/download
+naming, поэтому four smokes повторно не запускались. Full177, full mypy34/15 и
+S1/S2/pack/full Ruff не повторялись. Global mypy остаётся inherited raw1.
+
+До imports/collection/всех детей назначены новые synthetic home/appdata/temp/cache/
+log/output/YTDL_DATA_DIR и absolute forward-slash basetemp, offline/no-sync/no-download/
+no-bytecode/UTF8/offscreen flags; копия прежнего outer100s own Job watcher rebound.
+Watchdog не срабатывал, observed handles exited/live-before-close0; finally cleanup
+завершён. Реальные профили/медиа не читались и не менялись. Cumulative14 successor,
+старые pre-S3 identities/три absence, узкая repair delta и protected bytes заморожены.
+Все строки исходной S3 матрицы согласованы в handoff как fresh/retained/limit, но
+текущий whole-S3 verdict принадлежит тому же Reviewer. Code/tests/resources освобождены;
+Coder не stage/commit/push, S4/S5/S6/live E2E/HTTP/Trash/Linux/package не начинались.
+
+# S3 — независимый whole-slice ACCEPTED после R1/R2
+
+**ACCEPTED для всего исходного S3 на coherent successor**, не только для двух
+локальных controls. Исторический NEEDS_CHANGES и genuine raw1 остаются фактами
+прежних bytes. Весь прежний VERIFICATION сохранён как byte prefix; Oracle
+требования не изменялись ради GREEN. S4–S6 не реализованы/не приняты.
+
+Runtime identity: cumulative14 paths, primary SHA256
+`4351da41fdf3a61318974d8799fdd0f60ab489f09d2537fb2074334d2ada9522`, accepted base
+`5772f8fc4def3e6ed17f20787b0ebc276b765abe`. Независимо проверены14 worktree/copy/tar
+bindings,5-path repair,9 unchanged S3 и28 unchanged pre-S3 paths. Старые test
+assertions/decorators/definitions сохранены; изменения исходных fixtures только
+добавляют task namespace, включая meaningful unrelated/newer отрицательные cases.
+Public signatures и format/safe-dirname helpers прежние. Executable backend delta
+к отвергнутому S3 — только RHS root assignment; hooks/guard/cancel/error mapper
+не переписаны. Независимый freeze произведён до любых новых product producers.
+
+## Что независимо закрыто
+
+- **S3-R1:** одна detached entry/task пара используется до query/status selection,
+  limit и pure mapping. Тот же исходный control теперь raw0: непустой selected row
+  остаётся downloading, пока ordinary worker уже done/persisted; bytes, next useful
+  operation, JSON и close подтверждены. List/search regression дополнительно
+  сохраняет title/False flag/None persistence/[] artifacts одной прежней версии.
+- **S3-R2:** реальный backend использует `output_root/download-<admitted task_id>/…`.
+  Native causal A/B observer адаптирован ровно к устранению same-path destination:
+  оба installed FileDownloader guards теперь возвращают True/True, media physical
+  effects A+B и независимые bytes/JSON, не missing-checkpoint shortcut. Пересечения
+  artifact ownership нет; A SHA256 прежний
+  `6ceef77fe77881e4ebbf282fefc20e253be65dc1dcb4cda895ddb1456730d99d`.
+  Native done/cancelled/failed B имеют собственные непустые retained paths и readback,
+  A не изменяется. Исходный skip-existing RED не запускался заново/не переименован.
+
+Task IDs выдаются существующим единственным leased history owner с устойчивым
+next_id; это не новая очередь/registry или exception, отложенный до S4. Новый
+видимый layout отражён в README/руководстве, старые files/records не мигрируют.
+Selected output root, quality selectors, relative templates, URL/default/JSON/ID
+contracts сохранены. Между разными profiles output roots по исходному CONTRACT
+раздельны; hostile filesystem sandbox/общий межпроцессный output не обещаны.
+
+## Fresh независимые проверки corrective delta
+
+| Actual command / boundary | Raw | Факт |
+|---|---:|---|
+| Original live-filter control, новый owned root | 0 | Selection/result consistency, непустая строка и useful next/reopen/cleanup |
+| Native same-title observer с сохранённой exact semantic delta | 0 | Installed SDK pipeline + unchanged no-overwrite guard; genuine A+B media/bytes/JSON, A unchanged |
+| `pytest` двух named list/search и native done/cancelled/failed regressions через locked/no-sync | 0 | **5 passed**,0 failures/errors/skips |
+| Whole lifecycle/outcome/API-query/characterization/history-CLI modules + two affected runtime consumers + format-string class | 0 | **51 passed**,0 failures/errors/skips; real API/coordinator/repositories/files |
+| `ruff check --select E,F,I` четырёх changed Python files через locked/no-sync | 0 | Текущая correction, не full Ruff PASS |
+| `mypy api.py ytdlp_service.py --follow-imports=silent --ignore-missing-imports` через locked/no-sync | 0 | Два owned source files, не global type PASS |
+| Source/assertion/observer/receipt/JUnit/native/whole-matrix reconciliation | 0 | Метаданные применимости, не extra runtime coverage |
+
+Все product children получили собственные winning YTDL_DATA_DIR/appdata/home/
+profile/temp/cache/log/output roots до imports/collection. Absolute forward-slash
+Windows basetemp проверен до pytest, plugin autoload выключен, offline/no-sync/
+no-download/no-bytecode/UTF8/offscreen/no-track/no-update flags сохранены.
+Независимый outer100s Job watcher перепроверен/rebound; actual own native exits и
+signaled handles/live-before-close0 подтверждены без emergency watchdog cleanup.
+Все barrier releases/joins/leases/handlers закрыты. Реальной сети/профиля/медиа нет.
+
+Одно raw1 было только в metadata observer: ошибочный duplicate lookup отдельного
+watchdog_sha256 вместо уже проверяемого historical sha256 map. Raw/начальная версия
+сохранены; исправлена только schema lookup, metadata-only rerun0 без product replay.
+Author observer raw CRLF digest и его LF-normalized delta digest независимо
+согласованы; это не изменение SDK/контроля или ложная raw equality.
+
+## Вся исходная матрица S3 и границы reuse
+
+| Обязательство | Current successor basis |
+|---|---|
+| Useful positive/API→owner→edge→file→JSON/reopen | Fresh controls/whole outcome/lifecycle positives и next useful operation |
+| Max1 queued-cancel и blocked fetch без раннего terminal/нового download | Fresh исходные lifecycle cases; unchanged coordinator/token/lease + retained originals |
+| Before registration/immediate/both orders/monotonic/exactly-once after callback drain | Fresh whole lifecycle; public wait/close/next task, без private clear |
+| Typed attribution/PP/playlist/partial/cancel-vs-failure | Fresh whole outcome, installed guard/next-playlist boundary; R2 native complete/cancelled/failed собственные effects |
+| Terminal save after physical effect/no done/False/known paths/next/readonly | Fresh осмысленный os.replace failure; one-snapshot R1 repaired selection/limit; unchanged storage/outcome debt semantics |
+| Per-admission settings/mutation isolation/actual old cap until drain/new pool | Fresh causal lifecycle A/B/C/D/E; unchanged executor/resource owner |
+| Active+queued close/repeat/denial/subscriber/outside locks/next root owner | Fresh lifecycle + affected runtime consumers; unchanged other runtime proofs retained |
+| Submit refusal/owner/id/default/legacy/query-only/nullable0 | Fresh refusal/next useful, whole API/CLI query/characterization and actual measured0 case; current signatures/source bindings |
+| Diagnostics/import/storage/platform limits | Fresh same real nonempty main/error/stderr sink proof on corrected backend, no forbidden synthetic content; unchanged import/lease/storage source evidence retained. Not global privacy/platform claim |
+
+**Retained, НЕ свежий replay:** прежние независимые82/177 (7 e2e deselected,0 skips),
+full mypy raw1/34 exact inherited findings/15 files и four module smokes. Их exact
+source/assertions/fixtures/env/receipts сопоставлены; изменённые root/projection
+пути и их consumers проверены заново выше. Core/coordinator/runtime/DTO/events/
+bootstrap/transports/scripts/manifest bytes неизменны. Help/discovery/offscreen
+не достигают active download naming/mapper, affected CLI result modules — fresh.
+5/51/177 не складываются; новый full182 не заявлен. Никаких повторных S1/S2/pack/
+full baseline runs ради зелёного отчёта. Scoped type0 не превращает global raw1 в0.
+
+Independent acceptance, documentation closure, local commit, remote publication/
+ref readback и CI — отдельные факты. Same Reviewer завершает affected docs и их
+final-byte checks по проектному grant, без нового approval loop; actual delivery
+сообщается отдельно. Remote zero checks никогда не называются CI PASS.
+
+NOT_RUN/deferred: S4 delete/Trash/token, S5 complete standalone/embedded/GUI adapter
+lifetime/tool effects, S6 final matrix; live YouTube/network E2E, codec/FFmpeg media
+quality, Linux/remote CI, packaged EXE/manual visual GUI, full legacy privacy.
+После disposition/delivery S3 следующий срез назначает Hermes; S4 здесь не начат.

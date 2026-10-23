@@ -29,6 +29,8 @@ class CommandError(Exception):
     """Base command-layer exception with a user-facing hint."""
 
     code = "INTERNAL_ERROR"
+    task_id: int | None = None
+    result: dict[str, object] | None = None
 
     def __init__(
         self, message: str, hint: str | None = None, *, code: str | None = None
@@ -136,6 +138,8 @@ class DownloadCommandAPI:
         download_id = self._positive_id(download_id)
         task = self._coordinator.get_task(download_id)
         if task is None:
+            if self._history_repo.get_by_id(download_id) is not None:
+                raise CommandError("A live owner is required", code="OWNER_REQUIRED")
             raise NotFoundError(
                 f"Download #{download_id} not found or already finished",
                 "Use list_downloads() to see active downloads",
@@ -155,13 +159,18 @@ class DownloadCommandAPI:
         )
 
     def cancel_download(self, download_id: int) -> CancelResult:
-        self.prepare_cancel_download(download_id)
-        cancelled = self._coordinator.cancel(download_id)
-        if not cancelled:
-            raise ConflictError(
-                f"Download #{download_id} could not be cancelled",
-                "Try list_downloads() and retry while it is still queued or downloading",
-            )
+        download_id = self._positive_id(download_id)
+        task = self._coordinator.get_task(download_id)
+        if task is None:
+            if self._history_repo.get_by_id(download_id) is not None:
+                raise CommandError("A live owner is required", code="OWNER_REQUIRED")
+            raise NotFoundError(f"Download #{download_id} not found")
+        if task.status.value == "cancelled":
+            return CancelResult(download_id, "cancelled")
+        if task.status.is_terminal():
+            raise ConflictError(f"Download #{download_id} is already terminal")
+        if not self._coordinator.cancel(download_id):
+            raise ConflictError(f"Download #{download_id} could not be cancelled")
         logger.info("command_api.cancel_download id=%d", download_id)
         return CancelResult(id=download_id, status="cancel_requested")
 

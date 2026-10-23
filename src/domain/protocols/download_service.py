@@ -3,13 +3,11 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from pathlib import Path
 from typing import Callable, Optional
 
 from ..models import AppSettings, DownloadTask, VideoInfo
-
-# Legacy path-map contract, including subtitle lists. Typed outcomes follow in S3.
-DownloadPaths = dict[str, Path | list[Path] | None]
+from ..models.download_outcome import DownloadOutcome
+from ..models.download_outcome import DownloadPaths as DownloadPaths
 
 
 class IDownloadService(ABC):
@@ -36,7 +34,7 @@ class IDownloadService(ABC):
         task: DownloadTask,
         settings: AppSettings,
         progress_callback: Optional[Callable[[float, float, int], None]] = None,
-    ) -> DownloadPaths:
+    ) -> DownloadOutcome:
         """Скачивает видео согласно заданию.
 
         Args:
@@ -45,7 +43,7 @@ class IDownloadService(ABC):
             progress_callback: Вызывается с (percent, speed_bps, eta_sec).
 
         Returns:
-            Словарь путей: {
+            Typed completed/cancelled/failed outcome with known paths; legacy keys: {
                 "video": Path | None,
                 "audio": Path | None,
                 "subtitles": list[Path],

@@ -59,6 +59,7 @@ class HistoryEntry:
     finished_at: Optional[datetime] = None
     output_root: Optional[Path] = None  # Admission settings snapshot, not a deletion grant.
     error_code: Optional[str] = None
+    artifact_paths: list[Path] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         """Сериализует запись в словарь для JSON."""
@@ -90,6 +91,7 @@ class HistoryEntry:
             "finished_at": self.finished_at.isoformat() if self.finished_at else None,
             "output_root": _path(self.output_root),
             "error_code": self.error_code,
+            "artifact_paths": [str(p) for p in self.artifact_paths],
         }
 
     @classmethod
@@ -128,4 +130,5 @@ class HistoryEntry:
             ),
             output_root=_path(data.get("output_root")),
             error_code=data.get("error_code"),
+            artifact_paths=[Path(p) for p in data.get("artifact_paths", [])],
         )

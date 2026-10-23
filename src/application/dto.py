@@ -45,6 +45,27 @@ class DownloadSummaryDTO(_MappingLikeDTO):
     error_message: str
     description_path: str | None = None
     description_text: str | None = None
+    cancel_requested: bool | None = None
+    result_persisted: bool | None = None
+    error_code: str | None = None
+    artifact_paths: list[str] | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class TaskSnapshotDTO(_MappingLikeDTO):
+    id: int
+    url: str
+    title: str
+    playlist_title: str
+    status: str
+    progress: float | None
+    speed: float | None
+    eta_seconds: int | None
+    cancel_requested: bool
+    result_persisted: bool | None
+    artifact_paths: list[str]
+    error_code: str | None
+    error_message: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -86,6 +107,14 @@ QueryResultDTO = DownloadDetailsDTO | DescriptionResultDTO | TranscriptResultDTO
 def serialize_for_transport(value: Any) -> Any:
     if is_dataclass(value) and not isinstance(value, type):
         payload = asdict(value)
+        # Preserve exact legacy wire shape when neither live nor persisted S3 facts exist.
+        # False/[] and all error outcomes remain explicit, never hidden as 'unknown'.
+        execution_fields = ("cancel_requested", "result_persisted", "error_code", "artifact_paths")
+        if isinstance(value, DownloadSummaryDTO) and all(
+            payload[key] is None for key in execution_fields
+        ):
+            for key in execution_fields:
+                payload.pop(key)
         return {key: serialize_for_transport(item) for key, item in payload.items()}
     if isinstance(value, list):
         return [serialize_for_transport(item) for item in value]

@@ -9,7 +9,7 @@ areas: [architecture, application, adapters, testing, safety]
 summary: "Доработать существующий Application API и владельцев выполнения/хранения; подключить действующие CLI, MCP и GUI без нового интерфейса или демона."
 code_ref: "0abda8e2959b53561e8327f40c53118c944c94f8"
 code_verified_at: "2026-10-23"
-verification_scope: "Oracle исследовал исходную базу; независимо приняты S1 и S2 (включая R1 smoke isolation). S3–S6 ниже предстоящие; retained/fresh доказательства и пределы — VERIFICATION.md."
+verification_scope: "Oracle исследовал исходную базу; независимо приняты S1–S3, включая S3-R1/R2 coherent successor. S4–S6 ниже предстоящие; fresh/retained evidence и ограничения — VERIFICATION.md."
 related: [ytdl-command-first-contract, ytdl-project-philosophy, ytdl-pi-team]
 ---
 
@@ -221,6 +221,8 @@ flowchart LR
 
 Подменять yt-dlp/network **на инфраструктурном краю**, не весь API. Дополнительно unit adapter tests с fake YoutubeDL на его границе проверяют именно реальный YtDlpService cancellation/outcome mapping. Основные сценарии сохраняют реальные файлы/JSON и readback. Live download не требуется и не разрешён.
 
+**Текущий disposition S3:** whole-S3 независимо ACCEPTED после R1/R2 на cumulative successor. Один detached entry/task snapshot проходит selection/limit/mapping; реальные результаты разных admitted IDs разделены `output_root/download-<task_id>/…`. Quality format selectors, относительные title/playlist templates и URL semantics прежние; новые absolute paths записываются явно, старые файлы не мигрируют. Native A/B media и own partial paths при done/cancelled/failed проверены, не выведены из hook-флага. Прежние RED/NEEDS_CHANGES сохранены; адресные fresh5/51/type2/lint4 и применимые retained177/globaltype34/four smokes разделены в [VERIFICATION](VERIFICATION.md). Это не принятие S4–S6, codec/live/platform или complete adapter lifetime.
+
 ## S4 — Сделать delete ограниченным и восстановимым
 
 **Зависимость:** S2–S3 (нужны authoritative active state и artifact attribution). **Результат:** preview не эффект; согласован только точный набор файлов; неполный effect виден.
@@ -314,7 +316,7 @@ Logging privacy gate: synthetic URL/proxy/title/path/exception sentinels → н�
 
 # 7. Обновляемые знания и конкретные риски
 
-## Найденные поправки и состояние после S2
+## Найденные поправки и состояние после S3
 
 Oracle первоначально зафиксировал следующие gaps; текущий docs-sync не меняет его исторические receipts:
 
@@ -322,6 +324,7 @@ Oracle первоначально зафиксировал следующие ga
 - Руководство: исправлены config/data locations и текущие defaults, объяснён default-True delete checkbox/legacy риск; после S4 ещё нужно заменить warning фактическими token/Trash/known-files/partial semantics, а не объявлять их реализованными сейчас.
 - Logging instruction после S1 описывает argument → nonempty env → fallback, фактические adapter streams и доказанные nonempty sinks. Privacy filter всё ещё не доказан; последующие изменённые runtime/adapter error paths требуют своего gate.
 - После S2 docs/instructions описывают create_runtime/YTDL_DATA_DIR, readonly snapshot/writer lease/recovery, detached settings/errors и фактические пределы close. Smoke helper явно изолирует новый root selector; R1 regression сохраняет competing store/artifacts/no-lock и restoration. Архитектурная root precedence не изменялась ради теста.
+- После S3 добавлены truthful cancel intent/quiescence/outcome/persistence snapshots и pool-after-drain; R1/R2 поправки согласовали один query snapshot и task-ID output namespace. Это видимая дельта новых backend paths, не новое полномочие удалять дерево. Сохранённые legacy paths не переезжают; standalone/GUI finally и Safe Delete ещё S4/S5.
 - Engineering entry связан с PLAN/CONTRACT/VERIFICATION; исторический CLI/MCP план не второй текущий канон. Explicit checker corpus включает новые документы по authoring-схеме.
 - `tests/test_download_e2e.py`: S2 выполнил только signature/factory/settings adaptation; прежние assertions/markers сохранены, тела live tests не исполнялись. Это **не** live readiness; нужны отдельные URL/разрешение. CI isolation/module invocation alignment остаётся S6.
 
@@ -344,6 +347,6 @@ Oracle первоначально зафиксировал следующие ga
 
 **Done всей реализации:** S1–S5 реально выполнены; новый контракт соответствует коду/сериализации; адресные schedules и обязательные offline gates выполнены с raw exits/limits; новые errors отсутствуют; собственные ресурсы освобождены; документы согласованы; назначенный независимый Reviewer дал итоговый ACCEPTED для точных frozen bytes. Unverified live/OS/platform/package boundaries явно остаются NOT_RUN. Ни план, ни авторский PASS, ни discovery не являются этим Done. Каждый принятый срез затем сохраняется/публикуется тем же Reviewer в пределах отдельного grant; actual delivery и её возможный auth/CI blocker сообщаются отдельно от technical verdict.
 
-**S1 и S2 независимо приняты:** S2-R1 закрыт на coherent successor; исходный refusal и все прежние доказательства сохранены. Факты и ограничения — [VERIFICATION](VERIFICATION.md). Документы и selective доставка завершаются тем же Reviewer по действующему grant, публикация/CI сообщаются отдельно.
+**S1–S3 независимо приняты:** S2-R1 и S3-R1/R2 закрыты на соответствующих coherent successors; исходные refusals и прежние доказательства сохранены. Факты и ограничения — [VERIFICATION](VERIFICATION.md). Документы и selective доставка завершаются тем же Reviewer по действующему grant, публикация/CI сообщаются отдельно.
 
-**Следующий шаг Hermes после disposition/delivery S2:** передать тому же Coder **S3** с CONTRACT и его точными границами, не начинать новый архитектурный survey или повторную приёмку неизменённых S1/S2. Содержательные вопросы scope/lifetime/effects возвращаются Oracle; конкретные review defects — тому же Coder. Следующий результат — реализованный/проверенный frozen срез с фактическими exits, не новый план.
+**Следующий шаг Hermes после disposition/delivery S3:** передать тому же Coder **S4** с CONTRACT и его точными границами, не начинать новый архитектурный survey или повторную приёмку неизменённых S1–S3. Содержательные вопросы scope/lifetime/effects возвращаются Oracle; конкретные review defects — тому же Coder. Следующий результат — реализованный/проверенный frozen срез с фактическими exits, не новый план.
