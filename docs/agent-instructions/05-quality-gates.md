@@ -7,9 +7,12 @@ For runtime refactoring (including the command-first migration):
 - Reuse the existing environment via `uv run --locked --no-sync`; no dependency installation/update without separate permission.
 - Establish pre-import isolation according to the [testing instruction](../../.github/instructions/testing.instructions.md).
 - Offline tests passed: `uv run --locked --no-sync pytest tests/ -m "not e2e" -q`.
-- Cross-platform CI should run the offline suite on Linux and Windows when workflow files are present.
+- CI retains its Linux/Windows matrix and original triggers/provisioning. Its post-install isolation step must establish winning owned selectors and plugin/offline policy before product imports/collection/children; four smokes use module invocations. Qualify changed procedure locally, not only YAML shape. Local Windows evidence is not Linux/Python3.12/remote CI execution.
 - Changed Python files pass at least narrow lint for syntax/import errors:
   `uv run --locked --no-sync ruff check --select E,F,I <changed Python files>`.
+  For final S6, derive the nonempty cumulative authored set from the original PLAN
+  code_ref to the final worktree, not only the CI/Markdown delta. Exclude only the
+  verified unchanged imported PFK payload; record exact paths and provenance.
 - If GUI behavior is affected, run a GUI smoke.
 - If MCP behavior is affected, run an MCP tool-discovery smoke.
 - Shared API/bootstrap changes also require real offline application/adapter behavior,
@@ -30,9 +33,13 @@ For runtime refactoring (including the command-first migration):
   objects; prove actual after-context writes and owned release, not reconstruction.
   Disclosure of substituted network/Trash edges and scoped privacy limits remains required.
 - The assigned independent Pi Reviewer evaluates the frozen coherent candidate;
-  author tests are not independent acceptance. S1–S5 are accepted within recorded
-  bounds (S5-R1 closed), not S6/platform/live/native-Trash qualification. GUI redesign
-  and live YouTube E2E are out of scope.
+  author tests are not independent acceptance. S1–S6 and final command-first
+  migration are independently accepted in the recorded offline boundary (S5-R1
+  closed). Actual CI preparation/commands were qualified on local Windows/Python3.14.2,
+  not hosted/Linux/Python3.12/pwsh7. Mypy34/full configured lint57 remain visible
+  inherited debt, not PASS; authored65 E/F/I is a separate gate. Future changes
+  require their own affected qualification. GUI redesign, live YouTube/native
+  Trash/platform/package qualification are not implied by completion.
 
 ## Known baseline caveat
 

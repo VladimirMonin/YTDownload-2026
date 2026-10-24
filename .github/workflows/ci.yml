@@ -40,11 +40,68 @@ jobs:
       - name: Sync dependencies
         run: uv sync
 
+      # Dependency provisioning above is unchanged. Offline policy starts only
+      # after it, before any application import, test collection or smoke child.
+      - name: Prepare isolated offline checks
+        shell: python
+        run: |
+          import os
+          from pathlib import Path
+          import shlex
+          import tempfile
+
+          root = Path(tempfile.mkdtemp(prefix="ytdl-offline-", dir=os.environ["RUNNER_TEMP"])).resolve()
+          directories = {
+              "YTDL_CI_ROOT": root,
+              "YTDL_DATA_DIR": root / "profile",
+              "APPDATA": root / "appdata",
+              "LOCALAPPDATA": root / "localappdata",
+              "HOME": root / "home",
+              "USERPROFILE": root / "home",
+              "TMP": root / "temp",
+              "TEMP": root / "temp",
+              "TMPDIR": root / "temp",
+              "XDG_CONFIG_HOME": root / "config",
+              "XDG_DATA_HOME": root / "data",
+              "XDG_CACHE_HOME": root / "cache/xdg",
+              "UV_CACHE_DIR": root / "cache/uv",
+              "RUFF_CACHE_DIR": root / "cache/ruff",
+              "MYPY_CACHE_DIR": root / "cache/mypy",
+              "YTDL_LOG_DIR": root / "logs",
+              "YTDL_SMOKE_ROOT": root / "smokes",
+          }
+          for path in directories.values():
+              path.mkdir(parents=True, exist_ok=True)
+          (root / "home/Downloads/YTDownloader").mkdir(parents=True, exist_ok=True)
+          values = {name: path.as_posix() for name, path in directories.items()}
+          values.update({
+              "UV_OFFLINE": "1", "UV_NO_SYNC": "1", "UV_PYTHON_DOWNLOADS": "never",
+              "PYTHONDONTWRITEBYTECODE": "1", "PYTHONUTF8": "1",
+              "QT_QPA_PLATFORM": "offscreen", "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1",
+              "FASTMCP_CHECK_FOR_UPDATES": "off", "DO_NOT_TRACK": "1",
+              "PYTEST_ADDOPTS": shlex.join([
+                  "-p", "pytestqt.plugin", "-p", "no:cacheprovider",
+                  "--ignore=tests/downloads", "--basetemp=" + (root / "pytest").as_posix(),
+                  "--junitxml=" + (root / "junit.xml").as_posix(),
+              ]),
+          })
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as target:
+              for name, value in values.items():
+                  assert "\n" not in value and "\r" not in value
+                  target.write(name + "=" + value + "\n")
+          print("Owned offline-check environment prepared")
+
       - name: Offline tests
-        run: uv run pytest tests/ -m "not e2e" -q
+        run: uv run --locked --no-sync pytest tests/ -m "not e2e" -q
+
+      - name: CLI help smoke
+        run: uv run --locked --no-sync python -m scripts.smoke_cli_help
 
       - name: MCP smoke
-        run: uv run python scripts/smoke_mcp.py
+        run: uv run --locked --no-sync python -m scripts.smoke_mcp
+
+      - name: MCP stdio smoke
+        run: uv run --locked --no-sync python -m scripts.smoke_mcp_stdio
 
       - name: GUI smoke
-        run: uv run python scripts/smoke_gui.py
+        run: uv run --locked --no-sync python -m scripts.smoke_gui

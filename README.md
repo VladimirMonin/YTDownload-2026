@@ -6,11 +6,11 @@
 
 Разработка: [AGENTS.md](AGENTS.md), [инженерная документация](docs/engineering.md),
 [философия command-first](docs/foundation/project-philosophy.md). Исходный GUI
-сохраняется. Независимо приняты S1–S5: isolated baseline, runtime/storage,
-cooperative cancellation, truthful outcomes/snapshots, task-ID output attribution,
-ограниченное удаление и реальные CLI/MCP/GUI adapters с явным lifetime. S5-R1
-сохранности caller-owned logging handlers закрыт. Итоговая qualification/CI
-alignment остаётся S6; live/codec, native Trash, Linux/CI и EXE/manual visual
+сохраняется. Независимо приняты S1–S6 и конечный command-first переход в согласованной
+offline-границе: runtime/storage, cooperative cancellation, truthful outcomes,
+task-ID attribution, ограниченное удаление, реальные adapters/lifetime и CI isolation.
+S5-R1 закрыт. Actual CI preparation/argv/env проверены на local Windows/Python3.14.2;
+hosted CI/Linux/Python3.12/pwsh7, live/codec, native Trash и EXE/manual visual
 не квалифицированы:
 [план](docs/command-first/PLAN.md),
 [предлагаемый контракт](docs/command-first/CONTRACT.md),
@@ -353,13 +353,33 @@ uv run --locked --no-sync mypy src/ --ignore-missing-imports
 uv run --locked --no-sync ruff check --select E,F,I <changed-python-files>
 ```
 
-Подставить непустой список изменённых Python-файлов. Полный lint/type baseline
-не равен changed-file gate: глобальный mypy после S5 остаётся inherited exit1 с теми же 34 ошибками/15 файлами;
+Подставить непустой список изменённых Python-файлов. Для конечной qualification S6
+это cumulative authored Python от исходной базы плана до final worktree; проверенный
+неизменный импортированный PFK payload исключается отдельно, не вместе с application
+или tests. Полный lint/type baseline
+не равен changed-file gate: после S6 mypy остаётся inherited exit1/34 findings/15 files/68 checked, configured full lint104 — exit1/57. Authored65 E/F/I — отдельный PASS, не зелёный global baseline;
 подробности — [VERIFICATION](docs/command-first/VERIFICATION.md). Live E2E требует
 отдельного явного разрешения с конкретным URL; примеры в руководстве его не дают.
 Изменения только документации требуют affected checks, не автоматического повторения suite.
 
 ---
+
+### CI и локальная граница проверки
+
+Существующий [workflow](.github/workflows/ci.yml) сохраняет push-to-main/PR triggers,
+Linux/Windows matrix и прежнюю установку зависимостей/FFmpeg. Это процедура для
+подготовленных CI runners, не разрешение агенту запускать installers или `uv sync`.
+После provisioning отдельный Python step создаёт новый owned subtree в RUNNER_TEMP
+и назначает profile/home/temp/cache/log roots **до** collection/children. В offline
+фазе используются locked/no-sync, явный audited Qt plugin, исключение
+`tests/downloads` и четыре module-form smokes. `YTDL_OUTPUT_DIR` не является
+продуктовым override: default output следует synthetic home, tests могут передать
+явные settings. Детали — [тестирование](.github/instructions/testing.instructions.md).
+S6 independently ACCEPTED: actual preparation и пять последующих workflow commands
+прошли на local Windows/Python3.14.2, включая useful API/JSON/physical default
+output/readonly CLI/next writer и275-case suite. Это не Linux/Python3.12/GitHub
+hosted/pwsh7 qualification. Фактические executions/reuse/NOT_RUN — в VERIFICATION;
+публикация и наблюдённые remote jobs не выводятся из local PASS.
 
 ## Прямой Python API и время жизни
 
@@ -367,13 +387,18 @@ uv run --locked --no-sync ruff check --select E,F,I <changed-python-files>
 глобальной настройки logging. `main.initialize_app()` сохраняет прежний dict keys
 и aliases `application_api`/`command_api`, добавляя owning `runtime`.
 
-Пример **чтения собственного тестового профиля**, не рабочего пользовательского store:
+Пример **чтения собственного тестового профиля**, не рабочего пользовательского store.
+До запуска назначьте YTDL_DATA_DIR и остальные isolation roots только своему
+тестовому дереву по инструкции тестирования; отсутствие env здесь не скрывается
+fallback-ом в личный профиль:
 
 ```python
+import os
 from pathlib import Path
 from src.bootstrap import create_runtime
 
-with create_runtime(Path("owned-test-profile"), read_only=True) as runtime:
+profile = Path(os.environ["YTDL_DATA_DIR"]).resolve()
+with create_runtime(profile, read_only=True) as runtime:
     summaries = runtime.api.list_downloads()
 ```
 

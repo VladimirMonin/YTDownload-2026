@@ -26,6 +26,37 @@ description: "Правила написания и запуска тестов"
 - Все записи/удаления — только синтетические файлы внутри принадлежащего проверке дерева. Не читать настоящие `.env`, settings/history/logs/downloads для заполнения fixture. Не очищать чужие артефакты и не закрывать чужие процессы. Исключать `tests/downloads` до collection (например, `--ignore=tests/downloads`), не обходить и не хешировать его содержимое ради проверки сохранности.
 - Сразу после acquire регистрировать cleanup/finally, включая частичный setup: executor, future, subscription, client, server, file handler. Результат с оставшимся собственным сервером не закончен. Не ослаблять guards или assertions ради запуска.
 
+## CI isolation — отдельная фаза после provisioning
+
+[Workflow](../workflows/ci.yml) сохраняет Linux/Windows matrix, triggers и прежние
+checkout/Python/uv/FFmpeg/dependency installation steps. Они не запускаются агентом
+как часть offline-проверки. Затем `Prepare isolated offline checks` (shell Python)
+создаёт новый owned root через mkdtemp в RUNNER_TEMP и пишет GITHUB_ENV для следующих
+steps: winning YTDL_DATA_DIR, APPDATA/LOCALAPPDATA, HOME/USERPROFILE, temp, XDG config/
+data/cache, uv/ruff/mypy caches, logs/smokes, offline/no-sync/no-download/UTF8/
+no-bytecode/offscreen/no-track flags. OS essentials не заменяются и не печатаются.
+
+PYTEST_ADDOPTS задаётся целиком, с audited pytestqt.plugin, отключённым plugin
+autoload/cacheprovider, `--ignore=tests/downloads`, свежими absolute basetemp/JUnit.
+Native paths сериализуются с `/` и shlex.join, включая пробелы. Output default —
+созданный synthetic home/Downloads/YTDownloader, а не неработающий YTDL_OUTPUT_DIR.
+Продуктовые imports/collection/children offline-фазы начинаются только после этого.
+Каждый локальный replay обязан иметь новый root/GITHUB_ENV и собственный bounded
+watchdog; не использовать прежний basetemp, private profile или old evidence output.
+
+Изменение процедуры квалифицируется исполнением её actual run bytes и настоящей
+API/repository/CLI операцией с competing owned selectors/readback/next writer,
+затем фактическими offline commands. YAML parse — только структура. Windows local
+runtime не квалифицирует Linux, configured Python3.12, GitHub hosted runner или
+remote installation/CI; эти границы указываются отдельно, workflow не dispatch-ится.
+
+S6 independently ACCEPTED в этой offline-границе: actual workflow preparation и
+пять последующих команд исполнены на local Windows/Python3.14.2; useful
+API/physical media/JSON/readonly CLI/next writer и unchanged competing store
+подтверждены отдельно от275-case suite. Hosted CI/Linux/Python3.12/pwsh7 остаются
+NOT_RUN. Это применимое evidence для неизменных inputs, не вечный PASS будущих
+изменений процедуры и не повод переигрывать принятые S1–S5.
+
 ## Команды и границы
 
 Команды выполнять из корня проекта после назначения изоляции. Их наличие в инструкции — проверенный интерфейс существующих файлов/manifest, не обещание runtime PASS:

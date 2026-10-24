@@ -9,7 +9,7 @@ areas: [architecture, application, adapters, testing, safety]
 summary: "Доработать существующий Application API и владельцев выполнения/хранения; подключить действующие CLI, MCP и GUI без нового интерфейса или демона."
 code_ref: "0abda8e2959b53561e8327f40c53118c944c94f8"
 code_verified_at: "2026-10-23"
-verification_scope: "Oracle исследовал исходную базу; независимо приняты S1–S3, включая S3-R1/R2 coherent successor. S4–S6 ниже предстоящие; fresh/retained evidence и ограничения — VERIFICATION.md."
+verification_scope: "Oracle code_ref/rationale и historical receipts сохранены. S1–S6 и итоговый command-first переход независимо приняты в согласованной offline-границе; actual local Windows CI qualification, fresh/reused/NOT_RUN и непроверенные платформы/effects — VERIFICATION.md."
 related: [ytdl-command-first-contract, ytdl-project-philosophy, ytdl-pi-team]
 ---
 
@@ -32,7 +32,10 @@ related: [ytdl-command-first-contract, ytdl-project-philosophy, ytdl-pi-team]
 5. **Сохранность:** неудача записи не выглядит успехом; отказ/отмена не превращается в done с пустыми путями; delete не удаляет целую общую папку, не обходит подтверждение, не уничтожает безвозвратно файлы.
 6. **Завершение:** остановлены/join-нуты собственные workers и transport, снята lease; следующая сессия может открыть тот же store. Крах не запускает автоматически прежние загрузки.
 
-# 2. База: что реально есть
+# 2. Исходная база Oracle: исторический snapshot, не текущий runtime
+
+Таблица и gaps ниже описывают именно исходный code_ref, а не опубликованные S1–S5.
+Текущий accepted baseline и пределы — в [VERIFICATION](VERIFICATION.md).
 
 Исследована ветка `main`, HEAD `0abda8e2959b53561e8327f40c53118c944c94f8`. На входе runtime source неизменён; dirty docs принадлежат Hermes, `tools/project-foundation/` — импортированный read-only методический пакет. В ходе Oracle source/index/branch не менялись. Исторический `docs/cli_mcp_unification_plan.md` **не** источник фактов о текущем CLI.
 
@@ -124,7 +127,7 @@ C не нужен: нет редактируемого общего докуме
 
 # 4. Владельцы миграции
 
-Таблица — целевые owners всей миграции, не утверждение, что каждый уже готов. После S2 существуют bootstrap/runtime/download_rules/runtime_lock и связанные persistence/API seams; остальные будущие изменения отмечены срезами. Не переносить файлы ради красоты; сохранять wrappers/imports реальных consumers.
+Таблица сохраняет исходное распределение owners всей миграции. Эти обязанности реализованы и независимо проверены в ограниченных S1–S5 scope; слово «новый» ниже относится к миграции от исходного code_ref, не к предстоящему S6 runtime redesign. Qualification/CI и непроверенные эффекты фиксируются отдельно. Не переносить файлы ради красоты; сохранять wrappers/imports реальных consumers.
 
 | Ответственность | Целевой owner и совместимость |
 |---|---|
@@ -300,7 +303,7 @@ Windows, Python 3.14.2, existing `.venv`, `uv run --locked --no-sync`, offline/n
 
 ```bash
 uv run --locked --no-sync pytest tests/ -m "not e2e" -q
-uv run --locked --no-sync ruff check --select E,F,I <changed-python-files>
+uv run --locked --no-sync ruff check --select E,F,I <authored-python-files>
 uv run --locked --no-sync mypy src/ --ignore-missing-imports
 uv run --locked --no-sync python -m scripts.smoke_cli_help
 uv run --locked --no-sync python -m scripts.smoke_mcp
@@ -308,7 +311,7 @@ uv run --locked --no-sync python -m scripts.smoke_mcp_stdio
 uv run --locked --no-sync python -m scripts.smoke_gui
 ```
 
-`<changed-python-files>` — реальный непустой список. Full ruff baseline с теми же путями полезен для сравнения; это отдельный exit, не повод скрыть narrow E/F/I failure. Остаточные mypy findings сравниваются по location/cause, не только числу. Новые owned failures устраняются; существующие вне scope перечисляются. Full offline должен стать зелёным после адресной fixture-коррекции S1; исходные failures нельзя списать как «legacy» и назвать обязательный gate PASS.
+`<authored-python-files>` — реальный непустой список. Для обычной bounded delta это затронутые Python files; для конечного S6 — cumulative authored Python от исходного code_ref до final worktree, не пустой last-delta список CI/Markdown. Проверенный byte-identical imported PFK payload не authored scope и исключается отдельно, не ценой пропуска application/tests. Full ruff baseline с теми же путями полезен для сравнения; это отдельный exit, не повод скрыть narrow E/F/I failure. Остаточные mypy findings сравниваются по location/cause, не только числу. Новые owned failures устраняются; существующие вне scope перечисляются. Full offline должен стать зелёным после адресной fixture-коррекции S1; исходные failures нельзя списать как «legacy» и назвать обязательный gate PASS.
 
 Сценарные проверки S2–S5 — часть tests; smokes остаются отдельными transport/bootstrap доказательствами. Нельзя заменить реальный owner stub-ом, уменьшить assertions/timeouts ради зелёного, очищать private queues или подделывать production emissions. Не складывать пересекающиеся прогоны как уникальные тесты. Выход formatter/последней команды shell не заменяет raw native exit; Windows FFmpeg пример выше особенно важен.
 
@@ -316,9 +319,9 @@ Logging privacy gate: synthetic URL/proxy/title/path/exception sentinels → н�
 
 # 7. Обновляемые знания и конкретные риски
 
-## Найденные поправки и состояние после S3
+## Исторические поправки и документное состояние после S3
 
-Oracle первоначально зафиксировал следующие gaps; текущий docs-sync не меняет его исторические receipts:
+Следующие bullets сохраняют состояние именно на завершении S3. Их «ещё S4/S5» — историческая запись, не текущая незавершённость. Oracle первоначально зафиксировал эти gaps; S6 не переписывает его rationale/receipts:
 
 - 02/04 и README: после S1 различены ручная установка пользователем и existing-env checks; smoke примеры — module-form/locked/no-sync с pre-import isolation. Canonical stdio module сохранён. Исходные CLI help examples ещё не переписаны (source вне S1); их согласование остаётся S5. Прежняя bare запись в документах помечена исторической, не рабочим install-рецептом.
 - Руководство: исправлены config/data locations и текущие defaults, объяснён default-True delete checkbox/legacy риск; после S4 ещё нужно заменить warning фактическими token/Trash/known-files/partial semantics, а не объявлять их реализованными сейчас.
@@ -327,6 +330,13 @@ Oracle первоначально зафиксировал следующие ga
 - После S3 добавлены truthful cancel intent/quiescence/outcome/persistence snapshots и pool-after-drain; R1/R2 поправки согласовали один query snapshot и task-ID output namespace. Это видимая дельта новых backend paths, не новое полномочие удалять дерево. Сохранённые legacy paths не переезжают; standalone/GUI finally и Safe Delete ещё S4/S5.
 - Engineering entry связан с PLAN/CONTRACT/VERIFICATION; исторический CLI/MCP план не второй текущий канон. Explicit checker corpus включает новые документы по authoring-схеме.
 - `tests/test_download_e2e.py`: S2 выполнил только signature/factory/settings adaptation; прежние assertions/markers сохранены, тела live tests не исполнялись. Это **не** live readiness; нужны отдельные URL/разрешение. CI isolation/module invocation alignment остаётся S6.
+
+## Текущее согласование после принятых S1–S5
+
+- S4 safe delete и S5 adapters/lifetime независимо приняты, S5-R1 handler ownership закрыт. Руководство, CONTRACT и routed instructions описывают matching tokens, exact-file Trash/partial outcomes, readonly CLI, owned/borrowed runtime и реальные GUI callbacks, а не прежний repository fallback.
+- Locked/no-sync module examples — процедура готового окружения. Сохранённые legacy spellings/инсталляционные примеры не разрешают агенту sync/download или live URL; CLI/Python/stdio/GUI режимы и их roots/lifetime не взаимозаменяемы.
+- CI S6 сохраняет Linux/Windows matrix, triggers и существующий provisioning recipe. После provisioning отдельная подготовка назначает winning owned profile/home/temp/cache/log roots и offline/plugin policy до collection/children; pytest исключает tests/downloads, smokes вызываются как модули. Локальная Windows qualification этой процедуры не означает GitHub/Linux/Python3.12 runtime PASS.
+- S6 independently ACCEPTED закрыл original done/connected criteria посредством current fresh executions и явно source/assertion/fixture-bound reuse. Scope/privacy/native/live/package ограничения не сняты: actual local Windows/Python3.14.2 workflow preparation/argv/env не hosted/Linux/Python3.12/pwsh7 qualification. Полные raw exits/debt/limits — VERIFICATION; статус автора не подменял независимый verdict.
 
 ## Риски и ограниченные решения
 
@@ -347,6 +357,6 @@ Oracle первоначально зафиксировал следующие ga
 
 **Done всей реализации:** S1–S5 реально выполнены; новый контракт соответствует коду/сериализации; адресные schedules и обязательные offline gates выполнены с raw exits/limits; новые errors отсутствуют; собственные ресурсы освобождены; документы согласованы; назначенный независимый Reviewer дал итоговый ACCEPTED для точных frozen bytes. Unverified live/OS/platform/package boundaries явно остаются NOT_RUN. Ни план, ни авторский PASS, ни discovery не являются этим Done. Каждый принятый срез затем сохраняется/публикуется тем же Reviewer в пределах отдельного grant; actual delivery и её возможный auth/CI blocker сообщаются отдельно от technical verdict.
 
-**S1–S3 независимо приняты:** S2-R1 и S3-R1/R2 закрыты на соответствующих coherent successors; исходные refusals и прежние доказательства сохранены. Факты и ограничения — [VERIFICATION](VERIFICATION.md). Документы и selective доставка завершаются тем же Reviewer по действующему grant, публикация/CI сообщаются отдельно.
+**S1–S5 независимо приняты и опубликованы:** S2-R1, S3-R1/R2 и S5-R1 закрыты на соответствующих coherent successors; исходные refusals/RED и provenance сохранены. Accepted база перед S6 — `0187eb90b15802460dae44098ee914a7129765a8`. Факты и ограничения — [VERIFICATION](VERIFICATION.md). Публикация и CI — отдельные факты.
 
-**Следующий шаг Hermes после disposition/delivery S3:** передать тому же Coder **S4** с CONTRACT и его точными границами, не начинать новый архитектурный survey или повторную приёмку неизменённых S1–S3. Содержательные вопросы scope/lifetime/effects возвращаются Oracle; конкретные review defects — тому же Coder. Следующий результат — реализованный/проверенный frozen срез с фактическими exits, не новый план.
+**S6 технически завершён и independently ACCEPTED в offline-границе:** actual CI preparation/commands и useful API/JSON/readonly CLI/next writer, final275, authored65 E/F/I, mypy34/full-lint57 debt attribution, four module smokes и complete four-obligation ledger выполнены без изменения принятого runtime. Тот же Reviewer завершает factual docs/final-byte gates и selective delivery по прежнему grant; commit/literal remote readback/CI фиксируются отдельно и не следуют из local acceptance. S1–S5 не переоткрывались, нового architecture survey/runtime feature не было. Непроверенные native/live/platform/package эффекты явно остаются NOT_RUN. Дальнейшая работа возможна отдельным заданием, а не бесконечным расширением этого плана.

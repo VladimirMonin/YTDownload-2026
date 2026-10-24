@@ -1,8 +1,9 @@
 # 04 — CLI, MCP and GUI
 
-S1–S5 are independently accepted within the recorded offline boundaries, including
-S5-R1 (preserve caller-owned logging handlers). Final qualification/CI alignment
-remains S6. [Verification](../command-first/VERIFICATION.md) owns current facts;
+S1–S6 are independently accepted within the recorded offline boundary, including
+S5-R1 handler preservation and final CI isolation/module-command qualification.
+Actual workflow preparation/argv/env ran locally on Windows/Python3.14.2; hosted
+CI/Linux/Python3.12/pwsh7 remain NOT_RUN. [Verification](../command-first/VERIFICATION.md) owns current facts;
 [CONTRACT](../command-first/CONTRACT.md) owns semantics. No GUI redesign, live
 YouTube permission, native Trash restore or platform/package certification is implied.
 

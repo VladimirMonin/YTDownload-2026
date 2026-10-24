@@ -4,12 +4,12 @@ title: "YTDownload — фактическая проверка command-first"
 kind: verification
 status: accepted
 created: "2026-10-23"
-updated: "2026-10-23"
+updated: "2026-10-24"
 areas: [testing, isolation, logging, compatibility]
-summary: "Независимо приняты S1–S5 в ограниченных scope, S5-R1 закрыт; historical RED и пределы S6/live/platform/native qualification сохранены."
-code_ref: "1cfda355cff364786638c3618332131d49b8130c"
+summary: "S1–S6 и конечная offline-миграция независимо приняты; actual local Windows CI procedure квалифицирована, historical RED/debt и native/live/platform/package пределы сохранены."
+code_ref: "0187eb90b15802460dae44098ee914a7129765a8"
 code_verified_at: "2026-10-24"
-verification_scope: "Последняя accepted база S4 и cumulative S5 successor manifest3c2aabf4; whole-S5 independently ACCEPTED после addressed R1. Source bytes frozen, docs finish отдельно; S6/remote CI/native Trash/live/EXE/manual visual не квалифицированы."
+verification_scope: "Accepted S5 база и exact S6 manifest15e6992a; final offline ACCEPTED после independent actual CI prep/probe/full275/authored65/type+full-lint attribution/four smokes/docs. Hosted/Linux/Python3.12/pwsh7/native Trash/live/EXE/manual visual не квалифицированы."
 related: [ytdl-command-first-plan, ytdl-command-first-contract]
 ---
 
@@ -1140,3 +1140,188 @@ Reviewer-ом. PLAN и нормативные semantics CONTRACT не ослаб
 alignment оставлен S6. Technical acceptance, selective commit, literal remote ref
 readback и exact-head CI остаются разными фактами; отсутствие jobs не CI PASS.
 S6 начинается только следующим отдельным назначением после завершения S5.
+
+## S6 — авторская конечная offline qualification и CI/doc alignment
+
+База S6 — опубликованный S5 commit `0187eb90b15802460dae44098ee914a7129765a8`.
+S1–S5 и закрытые R1/R2 не переоткрывались; production Python, tests и smokes в S6
+не менялись. Статус этого раздела — **author READY_FOR_REVIEW, не S6 ACCEPTED**.
+Исходные Oracle rationale, historical failures/RED, независимые verdict и пределы
+выше сохранены. Следующий независимый verdict и доставка принадлежат тому же Reviewer.
+
+### CI procedure и реальные локальные границы
+
+Workflow сохраняет исходные push-to-main/PR triggers, Linux/Windows matrix,
+Python3.12 selection и все прежние provisioning/install commands. После них
+отдельный Python step создаёт новый root в RUNNER_TEMP, назначает winning
+profile/APPDATA/home/temp/XDG/cache/log/smoke roots, offline/no-sync/no-download/
+UTF8/no-bytecode/offscreen/no-track flags и audited Qt plugin policy **до**
+application imports/collection/children. PYTEST_ADDOPTS содержит tests/downloads
+exclusion, quoted forward-slash absolute basetemp и JUnit; output default следует
+synthetic home, YTDL_OUTPUT_DIR не объявлен продуктовым override. Smokes — четыре
+отдельные locked/no-sync module invocations.
+
+На доступном Windows host исполнены actual workflow preparation bytes, не их
+вторая реализация: inherited selectors указывали в competing owned roots,
+RUNNER_TEMP содержал пробелы. Настоящие API/coordinator/JSON + boundary backend
+создали useful done/persisted media в synthetic default output; native readonly
+CLI прочитал тот же store при живом writer, затем следующий writer открыл его.
+Competing store bytes не изменились. Затем actual offline/smoke argv выполнены
+с environment, полученным из GITHUB_ENV этой же процедуры, в новых own run roots.
+Это Windows/Python3.14.2 native argv/env qualification, **не** исполнение hosted
+GitHub runner, pwsh7 wrapper, configured Python3.12 или Linux matrix/install steps.
+Workflow не dispatch/rerun-ился; установки/скачивание зависимостей не запускались.
+
+### Конечные gates и disposition исходных требований
+
+- Fresh final offline: **275 passed, 7 e2e deselected, 0 skips**, raw/native0.
+  Counter selected cases совпадает с independently accepted S5; tests/assertions/
+  fixtures и production bytes неизменны. Live test bodies не исполнялись.
+- Cumulative authored lint: **65 Python paths**, от исходного PLAN code_ref до
+  текущего worktree, E/F/I raw/native0. Отдельно проверены74 read-only imported PFK
+  files против первого committed import; его checker не authored lint scope.
+  Не использован пустой last-delta список CI/Markdown.
+- Full source/test/script lint baseline по104 explicit Python paths: raw/native1,
+  **57 findings**, отдельный факт, не narrow gate и не broad cleanup. Source не
+  исправлялся. Full mypy: raw/native1, **34 inherited findings/15 files/68 checked**,
+  точные identities/cause совпадают с S5, new0/removed0; это не type PASS.
+- Четыре отдельные module smokes CLI/MCP/stdio/GUI: raw/native0. Они не заменяют
+  useful connected cases. Foundation explicit corpus18 и doc/manifest literals4
+  passed; README Python example реально прочитал useful synthetic record без
+  изменения store. CLI prose examples проверены parser-only, installers/live URLs/
+  сторонние client configs не исполнялись. Final doc bytes проверяются отдельно.
+
+| Original done/connected obligation | S6 основание |
+|---|---|
+| Direct Python без UI/transport, lease/storage/recovery/settings | Fresh existing connected cases в275; current source/assertion/readback bound к S5, независимый accepted статус reused, не новая архитектурная приёмка |
+| Cancellation/races/outcomes/snapshots/pools/SDK attribution | Fresh deterministic cases в275 на unchanged owners, прежние meaningful RED и независимое закрытие S3-R1/R2 сохранены |
+| File-only preview/token/guards/partial/persistence/replay | Fresh existing physical fixture moves/readback в275; original S4 matrix retained с byte/assertion binding; native Trash restore отдельно NOT_RUN |
+| Native CLI/stdio/managed HTTP/Qt/lifetime/handler ownership | Fresh275 содержит accepted S5 six-row cases и обе R1 regression functions; useful physical results и own release, не только help/discovery |
+| CI alignment и final gates | Actual preparation/owned-selector/readback probe + реальные команды выше; same workflow bytes, matrix/triggers/provisioning не изменены |
+| Знания, finite scope, final handoff | PLAN отделяет initial snapshot и historical notes от accepted S1–S5/current S6; нормативные semantics CONTRACT прежние. Полный S6 diff/preimages/receipts/freeze передаётся отдельно; independent verdict ещё ожидается |
+
+275, прежние36/5/275 и адресные проверки не суммируются. Неизменное независимое
+S1–S5 evidence переиспользовано только с проверкой относящихся source/assertion/
+fixture inputs и receipt; старые producer scripts/destinations не переисполнялись.
+
+Сохранены также S6 metadata/procedure failures: первоначальный слишком широкий
+input list захватил tracked packaging source build/build.py, после чего admission
+остановился; исправленный runner проверяет prefix allowlist **до** snapshot.
+Этот ошибочный input больше не читается/не используется. Два lint attempts получили
+E902 из-за CRLF в shell argv inventories; native splitlines/literal argv correction
+дала требуемый65-file PASS без изменения product/tests или ослабления assertions.
+Это setup/acquisition faults, не product RED и не вымышленный baseline lint PASS.
+
+**NOT_RUN / пределы неизменны:** independent S6 verdict/publication, hosted remote CI,
+Linux/Python3.12 runtime, native Trash move/restore, live YouTube/network/codec,
+packaging/EXE/manual visual GUI, whole legacy/native Qt privacy. Synthetic media и
+recoverable fixture moves не дают этих гарантий. Собственные resources закрыты/
+joined и последующие safe operations проверены; native supervisor/release receipts
+отдельны от author PASS. Coder не stage/commit/push; final docs/delivery — только
+после независимого ACCEPTED.
+
+## S6 — независимая конечная приёмка offline command-first (2026-10-24)
+
+**S6 и итоговый переход независимо ACCEPTED в согласованной offline-границе.**
+Source/tests/scripts в S6 не менялись; accepted S1–S5 не переоткрывались. Текущий
+technical verdict относится к coherent8-path candidate на S5 базе
+`0187eb90b15802460dae44098ee914a7129765a8`: manifest
+`15e6992af1da8c50da1ff01822be22114cd792493e0c10ea58c31d7491e0c387`,
+author archive `f9162546568c4d7e773fe383cc4f6fa6614117c8c8952edf9f02d9a0a3786186`.
+Это не полная cross-platform/live/native/package сертификация.
+
+До helpers/product producers независимо скопированы восемь candidate files и
+125 explicit admitted inputs. **Весь** список валидирован до source copy;
+117 protected/104 Python bytes сопоставлены с accepted S5,65 actual cumulative
+Python paths выведены от original code_ref. PFK74 отдельно raw-bound к unchanged
+первому импорту (Git LF reconciliation не заменяет текущие raw identities).
+Author acquisition fault с packaging source сохранён; его copied body не читался/
+не использовался Reviewer и не попадает в payload. Current admission исключила
+build/dist/vendor/tests/downloads/private roots до чтения. Personal leak не выдуман.
+
+### Actual CI procedure, не только YAML
+
+Независимо исполнены точные YAML run scalar bytes шага preparation. Сохранены
+matrix ubuntu/windows, triggers main+PR, fail-fast=false и все первые шесть
+provisioning recipes; installation/uv sync/remote workflow не запускались.
+Перед preparation унаследованные selectors намеренно указывали только в competing
+OWNED дерево, RUNNER_TEMP содержал пробелы. GITHUB_ENV от actual preparation дал
+winning native absolute profile/home/config/data/temp/cache/log/smoke roots,
+plugin/offline policy и shlex-quoted forward-slash basetemp/JUnit.
+
+Полезный composed путь: настоящий API/coordinator/repository с заменой только
+external network backend создал done/persisted media в **реальном default**
+synthetic home/Downloads/YTDownloader. Native readonly CLI прочитал тот же store
+при удерживаемой writer lease; physical bytes/JSON и next writer проверены.
+Competing JSON не менялся. Затем на том же workflow SHA и source bytes, в новых
+roots, исполнены actual full-test и четыре module-smoke argv. Parent/probe/дети
+получили изоляцию до импорта/collection; tests/downloads исключён до traversal.
+
+**Подтверждено:** local Windows/Python3.14.2, actual preparation, native argv/env,
+space paths, child inheritance, полезные effects/readback/cleanup. **NOT_RUN:**
+hosted GHA/provisioning, Linux, configured Python3.12 и pwsh7 shell wrapper.
+Native argv equivalence не названо запуском GitHub runner или PowerShell wrapper.
+
+### Свежие независимые gates и debt
+
+| Проверка | Raw/native | Результат |
+|---|---:|---|
+| Actual workflow prep + useful composed probe | 0 |Default output/physical bytes/JSON/held-writer readonly CLI/next writer, competing store unchanged |
+| Actual workflow offline-test command | 0 |275 passed,7 e2e deselected,0 skips; exact independently accepted S5 Counter |
+| Authored cumulative literal65 E/F/I | 0 |Не last-delta8 и не пустой docs-only Python scope; единственный imported PFK checker исключён отдельно |
+| Full mypy src | **1** |34 inherited findings/15 files/68 checked; exact file/line/message/code/multiplicity new0/removed0; не type PASS |
+| Configured full lint104 | **1** |57 inherited findings; exact file/line/column/code/message/multiplicity совпадают с bound unchanged-source baseline; не PASS и не broad cleanup |
+| Четыре actual workflow module-smoke commands | 0 each |CLI help5/MCP ten-tool discovery/real stdio parity/offscreen GUI construct-events-close |
+| Foundation explicit corpus + docs literal consumers | 0 |18 files/findings=[] и4 passed; external-link limits сохранены |
+| README Python example | 0 |Действительно прочитана одна useful synthetic row; readonly store byte-identical |
+|12 CLI prose examples | 0 |Только existing parser/arguments, не handlers/live download/server execution |
+| Independent source/assertion/fixture/native reconciliation | 0 |Все четыре original obligations и final offline done; не ещё один coverage count |
+
+Fresh275 и предыдущие5/36/275/другие reruns не суммируются. Каждый selected case
+связан с current raw test file/decorated source/assertions; нет нового/потерянного
+case. Физически перечитаны current CLI4 native0/1/1/1, modal6 recoverable bytes/
+unlisted preservation, R1five same-object/streams/after-write/owned-release и
+nonempty safe sinks. Unchanged independent S1–S5 owners/schedules/guards применимо
+retained, не выданы за новые acceptance cycles или новую архитектуру.
+
+### Четыре исходных обязательства S6 — единый verdict
+
+| Original obligation | Disposition |
+|---|---|
+| 1 Done/connected proof | ACCEPTED: qualified unchanged independent S1–S5 chain + current actual CI composed operation/full275/source/assertion/physical readback; direct core, cancellation/quiescence/settings/pools/artifacts, leases/deletion/partial/persistence и real adapters/lifetime сохранены |
+| 2 CI procedure | ACCEPTED LOCAL WINDOWS: actual prep и subsequent commands, winning roots/space quoting/child inheritance/useful result/release; matrix/triggers/provisioning unchanged. Hosted/Linux/Python3.12/pwsh7 остаются NOT_RUN |
+| 3 Документы/инструкции | ACCEPTED: historical Oracle snapshot/S3 notes отделены от current status, rationale/RED сохранены, normative CONTRACT неизменен кроме factual status. Useful README example, parser-only12, literal consumers/Foundation и truthful limits |
+| 4 Final gates/freeze/release | ACCEPTED: raw gates/65-file scope и exact debt attribution, independent admission-before-copy, one coherent snapshot, native own handles/join/next operation; no source/test/CI self-fix |
+
+### Подтверждённые входы и пределы
+
+- Direct Python: README example импортирует create_runtime, явно читает собственный
+  YTDL_DATA_DIR через read_only=True и list_downloads; actual useful row/store
+  preservation проверены. Отсутствие Qt/transport в core и direct lifecycle остаются
+  source-bound к принятым connected tests, не выводятся из одного import.
+- CLI: `uv run --locked --no-sync python -m src.interfaces.cli --json --data-dir <owned-data-root> history list`;
+  native tests отдельно подтверждают queries/acceptance/terminal/errors/readonly/
+  tokens/reopen. `--data-dir` не attach, standalone cancel требует live owner.
+- Stdio MCP: `uv run --locked --no-sync python -m src.interfaces.cli server stdio`;
+  real SDK child/tools/EOF и отдельный parity smoke подтверждены, stdout — protocol.
+- Existing GUI source entry: `uv run --locked --no-sync python app.py`. Проверены
+  actual offscreen MainWindow/run_desktop/shared HTTP/Qt actions/modal/settings и
+  cleanup; это **не** новый native launcher/EXE/manual visual proof. Нельзя выдавать
+  parser-only или source-tree/offscreen проверку за установленную сборку.
+
+После technical ACCEPTED этот же Reviewer завершает только materially affected
+factual docs/instructions и final-byte checks; runtime/tests/scripts и accepted
+workflow bytes остаются frozen. Исторические bodies/RED и отдельные artifacts
+не переписываются, текущий паспорт обновляется отдельно. Doc-only status sync
+не запускает заново неизменённые product suites. Selective commit, literal remote
+ref/SHA readback и observed exact-head CI записываются отдельно; zero jobs не PASS.
+
+**Открытые пределы, не скрытые обязательные дефекты:** native Trash move/restore,
+live YouTube/network/codec, Linux/configured Python3.12/pwsh7/hosted CI, EXE/manual
+visual, whole legacy/native Qt privacy и произвольные иные logging configurations
+не квалифицированы. Native capability/synthetic Trash/media не снимают этих границ.
+Ни installs/downloads/sync, ни user-bin/profile/media/log reads, ни foreign kills/
+ports, ни Goal/Pi/Hermes/global settings changes не выполнялись. Все own barriers/
+workers/clients/listeners/leases/handlers освобождены finally/join/native exit;
+watchdog emergency cleanup не потребовался. Согласованный offline-переход конечен
+и завершён; новые возможности/платформенные доказательства требуют отдельного задания.

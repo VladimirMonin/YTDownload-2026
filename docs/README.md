@@ -3,11 +3,12 @@
 Для разработчиков и агентов: [инженерная документация](engineering.md) и
 [философия проекта](foundation/project-philosophy.md). Это руководство пользователя
 сохраняется отдельно; архитектурный план не является подтверждением его примеров.
-Независимо приняты S1–S5: runtime/хранение, cooperative execution/outcome,
-изолированные результаты задач, ограниченное удаление и реальные CLI/MCP/GUI
-adapters с явным временем жизни. S5-R1 сохранности чужих log-handlers закрыт;
-итоговая qualification/CI alignment остаётся S6. EXE/manual visual, live загрузки,
-Linux/CI, native Trash restore и полная legacy диагностика не аттестованы:
+Независимо приняты S1–S6 в согласованной offline-границе: runtime/хранение,
+cooperative execution/outcome, изолированные результаты задач, ограниченное удаление,
+реальные CLI/MCP/GUI adapters и конечные proofs/CI isolation. S5-R1 сохранности чужих
+log-handlers закрыт. Это source-tree/offscreen и local Windows/Python3.14.2 evidence,
+не EXE/manual visual, live/codec, hosted CI/Linux/Python3.12/pwsh7, native Trash
+restore или полная legacy диагностика:
 [фактическая проверка](command-first/VERIFICATION.md), [план](command-first/PLAN.md). Ни этот текст, ни пример URL не разрешают
 агенту реальную загрузку или доступ к личным данным.
 
@@ -671,4 +672,4 @@ resume или двух одновременно работающих покол�
 ---
 
 *Исходная редакция руководства: март 2026. Затронутые storage/default/delete/logging
-сведения согласованы для принятых S1–S5; это не повторная проверка EXE, всех GUI/live-примеров или сторонних клиентских конфигураций.*
+сведения согласованы для offline-принятых S1–S6; это не повторная проверка EXE, всех GUI/live-примеров или сторонних клиентских конфигураций.*
