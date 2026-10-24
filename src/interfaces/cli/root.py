@@ -7,11 +7,11 @@ import json
 import logging
 import os
 import sys
-from collections.abc import Iterator, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import asdict, is_dataclass
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from src.application.command_api import CommandError
 from src.infrastructure.mcp.tools._utils import error_payload

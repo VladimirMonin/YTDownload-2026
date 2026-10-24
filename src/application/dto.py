@@ -1,10 +1,19 @@
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass, field, is_dataclass
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any, overload
+
+if TYPE_CHECKING:
+    from _typeshed import DataclassInstance
+
+# Covariant container interfaces describe JSON results; actual containers below
+# remain ordinary dict/list, including the legacy MCP list wrapper.
+type JSONValue = str | int | float | bool | None | Sequence[JSONValue] | Mapping[str, JSONValue]
+type JSONObject = dict[str, JSONValue]
 
 
 class _MappingLikeDTO:
@@ -111,9 +120,23 @@ class TranscriptResultDTO(_MappingLikeDTO):
 QueryResultDTO = DownloadDetailsDTO | DescriptionResultDTO | TranscriptResultDTO | QueryErrorDTO
 
 
-def serialize_for_transport(value: Any) -> Any:
+@overload
+def serialize_for_transport[T: DataclassInstance](
+    value: list[T] | tuple[T, ...],
+) -> list[JSONObject]: ...
+
+
+@overload
+def serialize_for_transport(value: DataclassInstance | Mapping[str, object]) -> JSONObject: ...
+
+
+@overload
+def serialize_for_transport(value: object) -> JSONValue: ...
+
+
+def serialize_for_transport(value: object) -> JSONValue:
     if is_dataclass(value) and not isinstance(value, type):
-        payload = asdict(value)
+        payload: dict[str, object] = asdict(value)
         # Preserve exact legacy wire shape when neither live nor persisted S3 facts exist.
         # False/[] and all error outcomes remain explicit, never hidden as 'unknown'.
         execution_fields = ("cancel_requested", "result_persisted", "error_code", "artifact_paths")
@@ -122,23 +145,38 @@ def serialize_for_transport(value: Any) -> Any:
         ):
             for key in execution_fields:
                 payload.pop(key)
-        return {key: serialize_for_transport(item) for key, item in payload.items()}
-    if isinstance(value, list):
-        return [serialize_for_transport(item) for item in value]
-    if isinstance(value, tuple):
-        return [serialize_for_transport(item) for item in value]
-    if isinstance(value, dict):
-        return {key: serialize_for_transport(item) for key, item in value.items()}
-    return normalize_scalar(value)
+        return serialize_for_transport(payload)
+    if isinstance(value, (list, tuple)):
+        items: Sequence[object] = value
+        return [serialize_for_transport(item) for item in items]
+    if isinstance(value, Mapping):
+        mapping: Mapping[object, object] = value
+        result: JSONObject = {}
+        for object_key, item in mapping.items():
+            if not isinstance(object_key, str):
+                raise TypeError("Transport object keys must be strings")
+            result[object_key] = serialize_for_transport(item)
+        return result
+    scalar = normalize_scalar(value)
+    if scalar is None or isinstance(scalar, (str, int, float, bool)):
+        return scalar
+    raise TypeError("Unsupported transport value")
 
 
-def normalize_scalar(value: Any) -> Any:
+@overload
+def normalize_scalar(value: str | Path | datetime | None) -> str | None: ...
+
+
+@overload
+def normalize_scalar(value: object) -> object: ...
+
+
+def normalize_scalar(value: object) -> object:
     if isinstance(value, Path):
         return str(value)
     if isinstance(value, Enum):
-        return value.value
+        enum_value: object = value.value
+        return enum_value
     if isinstance(value, datetime):
         return value.isoformat()
-    if value is None:
-        return None
     return value

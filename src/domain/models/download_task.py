@@ -9,15 +9,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum
+from enum import Enum, StrEnum
 from pathlib import Path
 
 from .app_settings import DownloadType, QualityOption
 from .download_outcome import DownloadOutcome
 
 
-class DownloadStatus(str, Enum):
+class DownloadStatus(StrEnum):
     """Статусы загрузки."""
+
+    __str__ = Enum.__str__
+    __format__ = Enum.__format__
 
     QUEUED = "queued"  # В очереди, ожидает
     DOWNLOADING = "downloading"  # Загружается прямо сейчас

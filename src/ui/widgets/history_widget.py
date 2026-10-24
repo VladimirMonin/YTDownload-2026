@@ -7,10 +7,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QCheckBox,
     QFrame,
@@ -197,7 +199,7 @@ class HistoryItemWidget(QFrame):
             else:
                 self.delete_requested.emit(self._entry.id, mode, selected.plan_token)
 
-    def _status_icon(self):
+    def _status_icon(self) -> QPixmap:
         if self._entry.status == DownloadStatus.DONE:
             return get_icon(TablerIcons.CIRCLE_CHECK, size=16, color=get_color("success")).pixmap(
                 16, 16
@@ -283,8 +285,10 @@ class HistoryWidget(QWidget):
         # Очищаем
         while self._container_layout.count() > 1:
             item = self._container_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            if item is not None:
+                widget = item.widget()
+                if widget is not None:
+                    widget.deleteLater()
         self._items.clear()
 
         for entry in entries:

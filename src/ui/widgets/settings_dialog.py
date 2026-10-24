@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QSpinBox,
     QVBoxLayout,
+    QWidget,
 )
 
 from ...domain.models import AppSettings
@@ -40,7 +41,7 @@ class SettingsDialog(QDialog):
 
     settings_saved = Signal(AppSettings)
 
-    def __init__(self, settings: AppSettings, parent=None) -> None:
+    def __init__(self, settings: AppSettings, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._settings = settings
         self.setWindowTitle(self.tr("Настройки"))

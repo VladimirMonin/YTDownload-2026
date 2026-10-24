@@ -20,7 +20,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 ROOT = Path(__file__).parent.parent  # c:\PY\youtube_downloader
 BUILD_DIR = ROOT / "build"
 DIST_DIR = ROOT / "dist" / "YTDownloader"

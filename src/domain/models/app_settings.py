@@ -9,12 +9,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import Enum, StrEnum
 from pathlib import Path
 
 
-class QualityOption(str, Enum):
+class QualityOption(StrEnum):
     """Варианты качества загружаемого видео."""
+
+    __str__ = Enum.__str__
+    __format__ = Enum.__format__
 
     BEST = "best"
     P1080 = "1080p"
@@ -36,8 +39,11 @@ class QualityOption(str, Enum):
         return names[self]
 
 
-class DownloadType(str, Enum):
+class DownloadType(StrEnum):
     """Тип загружаемого контента."""
+
+    __str__ = Enum.__str__
+    __format__ = Enum.__format__
 
     VIDEO = "video"  # видео + аудио (мерж через FFmpeg)
     AUDIO = "audio"  # только аудио

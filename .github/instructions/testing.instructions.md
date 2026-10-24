@@ -64,6 +64,7 @@ NOT_RUN. Это применимое evidence для неизменных inputs
 ```bash
 uv run --locked --no-sync pytest tests/test_ytdlp_unit.py -q
 uv run --locked --no-sync pytest tests/ -m "not e2e" -q
+uv run --locked --no-sync ruff check --config pyproject.toml <first-party-python-files>
 uv run --locked --no-sync ruff check --select E,F,I <changed-python-files>
 uv run --locked --no-sync mypy src/ --ignore-missing-imports
 uv run --locked --no-sync python -m scripts.smoke_cli_help
@@ -71,6 +72,11 @@ uv run --locked --no-sync python -m scripts.smoke_mcp
 uv run --locked --no-sync python -m scripts.smoke_mcp_stdio
 uv run --locked --no-sync python -m scripts.smoke_gui
 ```
+
+Configured first-party gate не заменяется narrow E/F/I: `<first-party-python-files>`
+разворачивается в полный заранее проверенный finite manifest отдельных argv по
+[quality gates](../../docs/agent-instructions/05-quality-gates.md). Там один владелец
+правила scope/PFK; historical S6 lint104 и Q1 first-party106 не смешиваются.
 
 Для адресной проверки заменить test path реальным модулем/case; для lint — непустым списком изменённых Python-файлов. `python -m scripts.*` сохраняет корень в module path. Smoke-скрипты назначают ещё более узкие собственные roots до product/Qt/MCP imports, включая `YTDL_DATA_DIR=<smoke-root>/appdata/YTDownloader`; `YTDL_SMOKE_ROOT` может указать существующий owned parent. Каждый override восстанавливается в finally, включая исходное отсутствие env key. Проверять не только child exit0, но и unchanged competing store/artifact set/no-lock при заранее заданном synthetic data root. Synthetic файлы сохраняются. Это не заменяет раннюю изоляцию pytest/его collection. Проверять side effects до исполнения; для changed child/cleanup paths нужен внешний bounded watchdog и проверка фактического выхода своих детей, не только receipt-флага.
 

@@ -1,6 +1,6 @@
 # 🎬 YTDownload 2026
 
-Настольный загрузчик YouTube видео и плейлистов с MCP-сервером для AI-агентов.
+CLI, прямой Python API и MCP для загрузки видео и плейлистов; существующая настольная оболочка сохраняется.
 
 **Стек:** Python 3.12+ · PySide6 · yt-dlp · FFmpeg · UV · FastMCP
 
@@ -15,6 +15,13 @@ hosted CI/Linux/Python3.12/pwsh7, live/codec, native Trash и EXE/manual visual
 [план](docs/command-first/PLAN.md),
 [предлагаемый контракт](docs/command-first/CONTRACT.md),
 [фактическая проверка и ограничения](docs/command-first/VERIFICATION.md).
+
+Q1 независимо технически принят: устранены first-party type/lint findings без
+ослабления правил; mypy0/68, configured Ruff0 по 106 Python files, offline291.
+Это проверенный source-срез, не готовность консольного EXE. Следующий Q2 должен
+отдельно подтвердить нашу CLI-сборку и полную командную функциональность, а не
+только запуск/help. GUI build/visual в эту работу не входят; live-проверка требует
+конкретного разрешённого пользовательского URL.
 
 ---
 
@@ -350,17 +357,25 @@ factory живёт в infrastructure, принимает существующи�
 ```bash
 uv run --locked --no-sync pytest tests/ -m "not e2e" -q
 uv run --locked --no-sync mypy src/ --ignore-missing-imports
+uv run --locked --no-sync ruff check --config pyproject.toml <first-party-python-files>
 uv run --locked --no-sync ruff check --select E,F,I <changed-python-files>
 ```
 
-Подставить непустой список изменённых Python-файлов. Для конечной qualification S6
-это cumulative authored Python от исходной базы плана до final worktree; проверенный
-неизменный импортированный PFK payload исключается отдельно, не вместе с application
-или tests. Полный lint/type baseline
-не равен changed-file gate: после S6 mypy остаётся inherited exit1/34 findings/15 files/68 checked, configured full lint104 — exit1/57. Authored65 E/F/I — отдельный PASS, не зелёный global baseline;
-подробности — [VERIFICATION](docs/command-first/VERIFICATION.md). Live E2E требует
-отдельного явного разрешения с конкретным URL; примеры в руководстве его не дают.
-Изменения только документации требуют affected checks, не автоматического повторения suite.
+Оба placeholders заменяются реальными непустыми массивами отдельных путей.
+Configured gate сохраняет E/F/I/UP и проверяет весь согласованный first-party
+scope, включая root entrypoints, build helper, src/scripts/tests и новые файлы.
+Правило формирования finite manifest и исключения только неизменного imported
+PFK — в [quality gates](docs/agent-instructions/05-quality-gates.md).
+
+Для принятого Q1 independently verified: **mypy exit0/68**, **configured Ruff
+exit0/106**, **changed E/F/I exit0/31**, **291 passed/7 e2e deselected/0 skipped**
+и четыре module smokes exit0. Исходные 34 mypy и 57 Ruff findings S6, дополнительный
+build I001 (58 в полном исходном first-party gate Q1) и прежние RED сохранены;
+они не переписаны в исторический PASS. Imported checker/recursive whole-root Ruff —
+NOT_RUN. Эти числа относятся к frozen Q1, не к непринятым параллельным Q2 edits.
+Подробности — [VERIFICATION](docs/command-first/VERIFICATION.md). Live E2E требует
+отдельного разрешения и конкретного URL; примеры руководства его не дают.
+Prose-only finish требует final-byte doc checks, не повторения принятого suite/type/lint.
 
 ---
 

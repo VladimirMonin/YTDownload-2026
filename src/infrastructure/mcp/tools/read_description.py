@@ -9,12 +9,13 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from src.application.api import ApplicationAPI
 from src.application.dto import serialize_for_transport
 from src.infrastructure.mcp.tools._utils import error_payload
 
 logger = logging.getLogger(__name__)
 
-def create_read_description_tool(mcp: Any, api: Any) -> None:
+def create_read_description_tool(mcp: Any, api: ApplicationAPI) -> None:
     """Регистрирует инструмент read_description в FastMCP.
 
     Args:
@@ -67,10 +68,11 @@ def create_read_description_tool(mcp: Any, api: Any) -> None:
         """
         try:
             result = serialize_for_transport(api.read_description(id))
+            text = result.get("description_text")
             logger.info(
                 "mcp.read_description id=%d text_len=%d",
                 id,
-                len(result.get("description_text") or ""),
+                len(text) if isinstance(text, str) else 0,
             )
             return result
 

@@ -9,10 +9,9 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import Enum, StrEnum
 from pathlib import Path
 
-from PySide6.QtGui import QColor, QFont, QPalette
 from PySide6.QtWidgets import QApplication
 
 # Абсолютный путь к check_white.svg (для QSS url())
@@ -23,8 +22,12 @@ _CHECK_SVG = (
 ).as_posix()
 
 
-class Theme(str, Enum):
+class Theme(StrEnum):
     """Варианты темы оформления."""
+
+    # Keep the legacy public str/format representation, not StrEnum's value-only default.
+    __str__ = Enum.__str__
+    __format__ = Enum.__format__
 
     DARK = "dark"
     LIGHT = "light"
@@ -77,7 +80,7 @@ _LIGHT = {
 }
 
 
-def _make_stylesheet(c: dict) -> str:
+def _make_stylesheet(c: dict[str, str]) -> str:
     """Генерирует QSS stylesheet из словаря цветов."""
     return f"""
 /* === Global === */
@@ -428,7 +431,7 @@ _THEMES: dict[Theme, str] = {
 }
 
 # Цвета для прямого использования
-_COLORS: dict[Theme, dict] = {
+_COLORS: dict[Theme, dict[str, str]] = {
     Theme.DARK: _DARK,
     Theme.LIGHT: _LIGHT,
 }
@@ -445,15 +448,12 @@ def apply_theme(theme: Theme) -> None:
     global _CURRENT_THEME
     _CURRENT_THEME = theme
     app = QApplication.instance()
-    if app:
-        app.setStyleSheet(_THEMES[theme])
+    if not isinstance(app, QApplication):
+        return
+    app.setStyleSheet(_THEMES[theme])
 
-    # Устанавливаем шрифт
+    # Устанавливаем шрифт только при настоящем widget application.
     try:
-        from pathlib import Path
-        import os
-        import sys
-
         root = Path(__file__).parent.parent.parent.parent
         font_dir = root / "resources" / "fonts"
 
@@ -462,11 +462,10 @@ def apply_theme(theme: Theme) -> None:
         for font_file in font_dir.glob("*.ttf"):
             QFontDatabase.addApplicationFont(str(font_file))
 
-        if app:
-            font = app.font()
-            font.setFamily("Noto Sans")
-            font.setPointSize(10)
-            app.setFont(font)
+        font = app.font()
+        font.setFamily("Noto Sans")
+        font.setPointSize(10)
+        app.setFont(font)
     except Exception:
         pass
 

@@ -7,10 +7,12 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from collections.abc import Callable
 
-from ...application.command_api import CommandError
+from ...application.api import ApplicationAPI
+from ...application.command_api import CommandError, DeletePreview, DeleteResult
 from ...core.event_bus import EventBus
+from ...domain.models import HistoryEntry
 
 logger = logging.getLogger(__name__)
 
@@ -24,16 +26,16 @@ class HistoryManager:
 
     def __init__(
         self,
-        application_api: Any,
+        application_api: ApplicationAPI,
         event_bus: EventBus,
-        command_api: Any | None = None,
+        command_api: ApplicationAPI | None = None,
     ) -> None:
         # Legacy explicit command_api remains accepted; no repository fallback.
         self._api = command_api if command_api is not None else application_api
         if not callable(getattr(self._api, "delete_download", None)):
             raise CommandError("An application owner is required", code="OWNER_REQUIRED")
         self._event_bus = event_bus
-        self._on_done_callback = None
+        self._on_done_callback: Callable[[], None] | None = None
         self._subscribe()
 
     def _subscribe(self) -> None:
@@ -47,23 +49,23 @@ class HistoryManager:
         self._event_bus.unsubscribe("download.failed", self._on_download_event)
         self._event_bus.unsubscribe("download.cancelled", self._on_download_event)
 
-    def set_on_updated(self, callback) -> None:
+    def set_on_updated(self, callback: Callable[[], None]) -> None:
         """Устанавливает коллбэк обновления (вызывается когда история изменилась)."""
         self._on_done_callback = callback
 
-    def get_all(self):
+    def get_all(self) -> list[HistoryEntry]:
         """Возвращает все записи истории."""
         return self._api.list_history_entries()
 
-    def search(self, query: str):
+    def search(self, query: str) -> list[HistoryEntry]:
         """Ищет записи по запросу."""
         return self._api.list_history_entries(query)
 
-    def prepare_delete(self, entry_id: int, *, delete_files: bool = True) -> Any:
+    def prepare_delete(self, entry_id: int, *, delete_files: bool = True) -> DeletePreview:
         return self._api.prepare_delete_download(entry_id, delete_files=delete_files)
 
     def delete(self, entry_id: int, *, delete_files: bool = False,
-               expected_plan: str | None = None) -> Any:
+               expected_plan: str | None = None) -> DeleteResult:
         """Only the public token-bound command may change history or files."""
         result = self._api.delete_download(entry_id, delete_files=delete_files,
             expected_plan=expected_plan)
@@ -73,7 +75,7 @@ class HistoryManager:
             self._on_done_callback()
         return result
 
-    def _on_download_event(self, **_) -> None:
+    def _on_download_event(self, **_: object) -> None:
         """Вызывается при изменении статуса загрузки."""
         if self._on_done_callback:
             self._on_done_callback()

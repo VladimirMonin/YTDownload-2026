@@ -10,13 +10,11 @@
 
 from __future__ import annotations
 
-from enum import Enum
-from functools import lru_cache
+from enum import Enum, StrEnum
 from pathlib import Path
-from typing import Optional
 
 from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QColor, QIcon, QPainter, QPixmap
+from PySide6.QtGui import QIcon, QPainter, QPixmap
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import QApplication
 
@@ -24,8 +22,11 @@ from PySide6.QtWidgets import QApplication
 _ICONS_DIR = Path(__file__).parent.parent.parent.parent / "resources" / "icons" / "tabler"
 
 
-class TablerIcons(str, Enum):
+class TablerIcons(StrEnum):
     """Доступные иконки Tabler Icons."""
+
+    __str__ = Enum.__str__
+    __format__ = Enum.__format__
 
     # Загрузка и управление
     DOWNLOAD = "download"
@@ -100,13 +101,13 @@ def _get_auto_color() -> str:
     except Exception:
         pass
     app = QApplication.instance()
-    if app:
+    if isinstance(app, QApplication):
         palette = app.palette()
         return palette.text().color().name()
     return "#e8eaf6"
 
 
-def _render_svg(icon: TablerIcons, size: int, color: Optional[str] = None) -> QPixmap:
+def _render_svg(icon: TablerIcons, size: int, color: str | None = None) -> QPixmap:
     """Рендерит SVG с заменой цвета.
 
     Args:
@@ -136,7 +137,7 @@ def _render_svg(icon: TablerIcons, size: int, color: Optional[str] = None) -> QP
 
     # HiDPI: рендерим в размер с учётом device pixel ratio
     app = QApplication.instance()
-    dpr = app.devicePixelRatio() if app else 1.0
+    dpr = app.devicePixelRatio() if isinstance(app, QApplication) else 1.0
     phys = QSize(int(size * dpr), int(size * dpr))
     pixmap = QPixmap(phys)
     pixmap.fill(Qt.GlobalColor.transparent)
@@ -154,7 +155,7 @@ def _render_svg(icon: TablerIcons, size: int, color: Optional[str] = None) -> QP
 def get_pixmap(
     icon: TablerIcons,
     size: int = 20,
-    color: Optional[str] = None,
+    color: str | None = None,
 ) -> QPixmap:
     """Возвращает QPixmap для иконки.
 
@@ -174,7 +175,7 @@ def get_pixmap(
 def get_icon(
     icon: TablerIcons,
     size: int = 20,
-    color: Optional[str] = None,
+    color: str | None = None,
 ) -> QIcon:
     """Возвращает QIcon для кнопок и пр.
 

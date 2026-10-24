@@ -9,7 +9,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 from .app_settings import DownloadType, QualityOption
 from .download_task import DownloadStatus
@@ -47,24 +46,24 @@ class HistoryEntry:
     quality: QualityOption = QualityOption.BEST
     download_type: DownloadType = DownloadType.VIDEO
     status: DownloadStatus = DownloadStatus.QUEUED
-    video_path: Optional[Path] = None
-    audio_path: Optional[Path] = None
+    video_path: Path | None = None
+    audio_path: Path | None = None
     subtitle_paths: list[Path] = field(default_factory=list)
-    description_path: Optional[Path] = None
-    thumbnail_path: Optional[Path] = None
-    info_json_path: Optional[Path] = None
-    output_dir: Optional[Path] = None
+    description_path: Path | None = None
+    thumbnail_path: Path | None = None
+    info_json_path: Path | None = None
+    output_dir: Path | None = None
     error_message: str = ""
     created_at: datetime = field(default_factory=datetime.now)
-    finished_at: Optional[datetime] = None
-    output_root: Optional[Path] = None  # Admission settings snapshot, not a deletion grant.
-    error_code: Optional[str] = None
+    finished_at: datetime | None = None
+    output_root: Path | None = None  # Admission settings snapshot, not a deletion grant.
+    error_code: str | None = None
     artifact_paths: list[Path] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         """Сериализует запись в словарь для JSON."""
 
-        def _path(p: Optional[Path]) -> Optional[str]:
+        def _path(p: Path | None) -> str | None:
             return str(p) if p else None
 
         def _ev(v: object) -> str:
@@ -105,7 +104,7 @@ class HistoryEntry:
             Экземпляр HistoryEntry.
         """
 
-        def _path(v: Optional[str]) -> Optional[Path]:
+        def _path(v: str | None) -> Path | None:
             return Path(v) if v else None
 
         return cls(

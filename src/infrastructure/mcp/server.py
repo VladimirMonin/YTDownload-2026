@@ -7,7 +7,8 @@ import socket
 import sys
 import threading
 import time
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from src.application.command_api import CommandError
 

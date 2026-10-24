@@ -12,7 +12,7 @@ CLI/MCP stack reuses transport-neutral DTOs elsewhere.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Protocol, runtime_checkable
 
 from src.application.command_api import CommandError
 from src.application.dto import serialize_for_transport
@@ -23,12 +23,20 @@ def _ev(value: Any) -> Any:
     return value.value if hasattr(value, "value") else value
 
 
-def _fmt_dt(value: Any) -> str | None:
+@runtime_checkable
+class _ISOFormattable(Protocol):
+    def isoformat(self) -> str: ...
+
+
+def _fmt_dt(value: object) -> str | None:
     """Format datetime-like values into the legacy ISO/string transport shape."""
     if value is None:
         return None
-    if hasattr(value, "isoformat"):
-        return value.isoformat()
+    if isinstance(value, _ISOFormattable):
+        result = value.isoformat()
+        if not isinstance(result, str):
+            raise TypeError("ISO formatter must return a string")
+        return result
     return str(value)
 
 

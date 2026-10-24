@@ -9,8 +9,9 @@ from __future__ import annotations
 import logging
 import re
 import threading
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Literal, Optional
+from typing import Any, Literal
 
 from ..domain.models import AppSettings, DownloadTask, VideoInfo
 from ..domain.models.app_settings import DownloadType, QualityOption
@@ -23,7 +24,7 @@ from .url_utils import parse_youtube_url
 logger = logging.getLogger(__name__)
 
 # Высота для каждого варианта качества
-_QUALITY_HEIGHT: dict[QualityOption, Optional[int]] = {
+_QUALITY_HEIGHT: dict[QualityOption, int | None] = {
     QualityOption.BEST: None,
     QualityOption.P1080: 1080,
     QualityOption.P720: 720,
@@ -79,12 +80,12 @@ class _BackendLogger:
 class YtDlpService(IDownloadService):
     """One service per attempt; cancellation is sticky, paths come only from this attempt."""
 
-    def __init__(self, ffmpeg_path: Optional[Path] = None) -> None:
+    def __init__(self, ffmpeg_path: Path | None = None) -> None:
         self._ffmpeg_path = ffmpeg_path or self._detect_ffmpeg()
         self._cancel_event = threading.Event()
 
     @staticmethod
-    def _detect_ffmpeg() -> Optional[Path]:
+    def _detect_ffmpeg() -> Path | None:
         return find_ffmpeg()
 
     def _base_opts(self, settings: AppSettings) -> dict[str, Any]:
@@ -148,7 +149,7 @@ class YtDlpService(IDownloadService):
         self,
         task: DownloadTask,
         settings: AppSettings,
-        progress_callback: Optional[Callable[[float, float, int], None]] = None,
+        progress_callback: Callable[[float, float, int], None] | None = None,
     ) -> DownloadOutcome:
         if self._cancel_event.is_set():
             return DownloadOutcome("cancelled")

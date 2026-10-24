@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Optional
 
 from ..models import HistoryEntry
 
@@ -54,7 +53,7 @@ class IHistoryRepository(ABC):
         """Atomically persist detached updates (including startup recovery)."""
 
     @abstractmethod
-    def get_by_id(self, entry_id: int) -> Optional[HistoryEntry]:
+    def get_by_id(self, entry_id: int) -> HistoryEntry | None:
         """Возвращает запись по ID.
 
         Args:

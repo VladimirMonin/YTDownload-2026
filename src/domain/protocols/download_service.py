@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from ..models import AppSettings, DownloadTask, VideoInfo
 from ..models.download_outcome import DownloadOutcome
@@ -33,7 +33,7 @@ class IDownloadService(ABC):
         self,
         task: DownloadTask,
         settings: AppSettings,
-        progress_callback: Optional[Callable[[float, float, int], None]] = None,
+        progress_callback: Callable[[float, float, int], None] | None = None,
     ) -> DownloadOutcome:
         """Скачивает видео согласно заданию.
 

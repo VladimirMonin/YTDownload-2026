@@ -18,8 +18,6 @@ from __future__ import annotations
 import hashlib
 import os
 import shutil
-import struct
-import sys
 import urllib.request
 import zipfile
 from pathlib import Path

@@ -142,7 +142,11 @@ class DownloadOptionsWidget(QWidget):
 
     @property
     def subtitle_lang(self) -> str:
-        return self._lang_combo.currentData()
+        # Qt currentData() is Any; this widget stores string language codes.
+        value = self._lang_combo.currentData()
+        if not isinstance(value, str):
+            raise TypeError("Invalid subtitle language selection")
+        return value
 
     @property
     def save_description(self) -> bool:

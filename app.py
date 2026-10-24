@@ -5,11 +5,12 @@ from __future__ import annotations
 import logging
 import os
 import sys
+from collections.abc import Iterator
 from contextlib import contextmanager
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, Iterator
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from PySide6.QtWidgets import QApplication
@@ -113,7 +114,7 @@ def _install_exception_hooks() -> None:
     sys.excepthook = _excepthook
 
 
-def _start_mcp_safe(services: dict[str, Any], host: str, port: int) -> "HTTPServerHandle":
+def _start_mcp_safe(services: dict[str, Any], host: str, port: int) -> HTTPServerHandle:
     """Return the actual owned listener, or a safely mapped startup refusal."""
     from src.infrastructure.mcp.server import HTTPServerHandle
 
@@ -121,7 +122,7 @@ def _start_mcp_safe(services: dict[str, Any], host: str, port: int) -> "HTTPServ
 
 
 def run_desktop(
-    qt_app: "QApplication",
+    qt_app: QApplication,
     services: dict[str, Any],
     *,
     host: str = "127.0.0.1",

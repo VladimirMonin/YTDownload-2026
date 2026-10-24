@@ -1,10 +1,21 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 
-def resolve_history_entry_title(entry: Any) -> str:
+class _HistoryTitle(Protocol):
+    @property
+    def playlist_title(self) -> str | None: ...
+
+    @property
+    def title(self) -> str | None: ...
+
+    @property
+    def url(self) -> str: ...
+
+
+def resolve_history_entry_title(entry: _HistoryTitle) -> str:
     return entry.playlist_title or entry.title or entry.url[:80]
 
 

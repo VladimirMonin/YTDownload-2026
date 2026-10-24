@@ -9,13 +9,14 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from src.application.api import ApplicationAPI
 from src.application.dto import serialize_for_transport
 from src.infrastructure.mcp.tools._utils import error_payload
 
 logger = logging.getLogger(__name__)
 
 
-def create_list_downloads_tool(mcp: Any, api: Any) -> None:
+def create_list_downloads_tool(mcp: Any, api: ApplicationAPI) -> None:
     """Регистрирует инструмент list_downloads в FastMCP.
 
     Args:

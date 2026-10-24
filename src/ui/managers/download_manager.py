@@ -14,6 +14,7 @@ from PySide6.QtCore import QObject, Signal
 from ...application.command_api import CommandError
 from ...application.dto import QueryErrorDTO
 from ...core.event_bus import EventBus
+from ...domain.models.app_settings import DownloadType, QualityOption
 from ...domain.models.download_task import DownloadStatus, DownloadTask
 
 if TYPE_CHECKING:
@@ -42,7 +43,7 @@ class DownloadManager(QObject):
 
     def __init__(
         self,
-        application_api: "ApplicationAPI",
+        application_api: ApplicationAPI,
         event_bus: EventBus,
     ) -> None:
         super().__init__()
@@ -73,12 +74,12 @@ class DownloadManager(QObject):
     def add(
         self,
         url: str,
-        quality=None,
-        download_type=None,
-        subtitle_lang=None,
-        save_subtitles=None,
-        save_description=None,
-        save_thumbnail=None,
+        quality: QualityOption | str | None = None,
+        download_type: DownloadType | str | None = None,
+        subtitle_lang: str | None = None,
+        save_subtitles: bool | None = None,
+        save_description: bool | None = None,
+        save_thumbnail: bool | None = None,
     ) -> int:
         """Добавляет URL в очередь через координатор.
 
@@ -100,7 +101,7 @@ class DownloadManager(QObject):
         self._api.cancel_download(task_id)
 
     @staticmethod
-    def _view(snapshot: "TaskSnapshotDTO") -> DownloadTask:
+    def _view(snapshot: TaskSnapshotDTO) -> DownloadTask:
         """Detached presentation mapping for the unchanged card widget."""
         return DownloadTask(id=snapshot.id, url=snapshot.url, title=snapshot.title,
             playlist_title=snapshot.playlist_title, status=DownloadStatus(snapshot.status),
@@ -120,31 +121,33 @@ class DownloadManager(QObject):
 
     # ── EventBus callbacks (вызываются из фонового потока) ──────
 
-    def _on_queued(self, task_id: int, url: str, **_) -> None:
+    def _on_queued(self, task_id: int, url: str, **_: object) -> None:
         self.task_queued.emit(task_id, url)
 
-    def _on_started(self, task_id: int, **_) -> None:
+    def _on_started(self, task_id: int, **_: object) -> None:
         self.task_started.emit(task_id)
         # Обновляем задачу для получения title
         task = self.get_task(task_id)
         if task and task.title:
             self.task_title_updated.emit(task_id, task.title)
 
-    def _on_progress(self, task_id: int, percent: float, speed: float, eta: int, **_) -> None:
+    def _on_progress(
+        self, task_id: int, percent: float, speed: float, eta: int, **_: object,
+    ) -> None:
         self.task_progress.emit(task_id, percent, speed, eta)
 
-    def _on_done(self, task_id: int, **_) -> None:
+    def _on_done(self, task_id: int, **_: object) -> None:
         self.task_done.emit(task_id)
         # Обновляем title если изменился
         task = self.get_task(task_id)
         if task and task.title:
             self.task_title_updated.emit(task_id, task.title)
 
-    def _on_failed(self, task_id: int, error: str, **_) -> None:
+    def _on_failed(self, task_id: int, error: str, **_: object) -> None:
         self.task_failed.emit(task_id, error)
 
-    def _on_cancelled(self, task_id: int, **_) -> None:
+    def _on_cancelled(self, task_id: int, **_: object) -> None:
         self.task_cancelled.emit(task_id)
 
-    def _on_title_resolved(self, task_id: int, title: str, **_) -> None:
+    def _on_title_resolved(self, task_id: int, title: str, **_: object) -> None:
         self.task_title_resolved.emit(task_id, title)

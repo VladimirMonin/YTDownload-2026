@@ -6,10 +6,10 @@ status: accepted
 created: "2026-10-23"
 updated: "2026-10-24"
 areas: [testing, isolation, logging, compatibility]
-summary: "S1–S6 и конечная offline-миграция независимо приняты; actual local Windows CI procedure квалифицирована, historical RED/debt и native/live/platform/package пределы сохранены."
-code_ref: "0187eb90b15802460dae44098ee914a7129765a8"
+summary: "S1–S6 offline и follow-up Q1 независимо приняты; Q1 mypy0/68, configured first-party1060, offline291. Historical RED/S6 debt и native/live/platform/package пределы сохранены."
+code_ref: "7489a6d95934cc4853ab92940b489d90cf8562a9"
 code_verified_at: "2026-10-24"
-verification_scope: "Accepted S5 база и exact S6 manifest15e6992a; final offline ACCEPTED после independent actual CI prep/probe/full275/authored65/type+full-lint attribution/four smokes/docs. Hosted/Linux/Python3.12/pwsh7/native Trash/live/EXE/manual visual не квалифицированы."
+verification_scope: "Accepted S6 база и exact Q1 manifest4dc1136a (31 paths), technical9b2d8591: mypy0/68, configured1060, changed31 E/F/I0, affected63/full291, four smokes0, actual enum/serializer/SDK/Qt compatibility. Не распространяется на параллельный Q2 worktree; PFK checker/recursive root, hosted/Linux/Python3.12/pwsh7/native/live/EXE/visual NOT_RUN."
 related: [ytdl-command-first-plan, ytdl-command-first-contract]
 ---
 
@@ -1325,3 +1325,115 @@ ports, ни Goal/Pi/Hermes/global settings changes не выполнялись. 
 workers/clients/listeners/leases/handlers освобождены finally/join/native exit;
 watchdog emergency cleanup не потребовался. Согласованный offline-переход конечен
 и завершён; новые возможности/платформенные доказательства требуют отдельного задания.
+
+## Q1 — независимое закрытие first-party type/lint findings (2026-10-24)
+
+**ACCEPTED_Q1** для coherent 31-path source/test candidate на принятой S6 базе
+`7489a6d95934cc4853ab92940b489d90cf8562a9`. Primary manifest
+`4dc1136a9e33f0f38ada5bf67a26f3da8c225056c80955ce1f15e7b376d30270`,
+author archive `47c823d662aa2f77a25b7841cf8fd84883de6d5e1905fcda784a18789d094acd`,
+independent technical acceptance
+`9b2d8591266d1a4a5f082431e608282c60d4b29e0c72fe62ab4f6903595cee89`.
+S1–S6 не переоткрывались, прежние RED/receipts и весь исторический body выше
+сохранены. Этот current passport не превращает старые raw1 в исторический PASS.
+
+### Точный scope и исходные причины
+
+Весь finite list проверен до bulk body acquisition: 126 admitted source/config/docs
+inputs, 31 working/copy/archive files, 30 original preimages и одна original absence
+`tests/test_type_contracts.py`. Protected83 и imported PFK74 проверены отдельно;
+AGENTS/process4 после author freeze учтены как разрешённый отдельный workflow delta,
+не задним числом добавлены в авторский manifest. Generated `.serena/` — только
+admitted directory metadata, не читаемый/хешируемый/staging payload.
+
+Configured first-party inventory независимо выведен из Git metadata: **105 tracked
+Python files +1 новый test =106**, включая `build/build.py`, root entrypoints,
+src/scripts/tests. Только unchanged imported PFK checker вне этого gate. Нет
+recursive обхода неизвестного дерева или исключения application/tests ради green.
+Нормативные PLAN/CONTRACT/PFK, pyproject/uv.lock/.gitignore/CI не изменялись.
+
+Original mypy34 сверены по file/line/message/code/multiplicity с retained S6.
+Original configured Ruff58 — прежние57 плюс ровно build/build.py:16:1 I001;
+location/column/code/message проверены, не только counts. Build change — одна лишняя
+пустая строка, полный parsed AST идентичен; build/download scripts не запускались.
+Исправлены first-party причины: title protocol, callbacks/API returns, nullable Qt
+boundaries, typed color maps, один checked serializer и enum modernization.
+Новых casts/type ignores/no_type_check/noqa/exclusions/config weakening нет.
+
+### Реальная совместимость за статическими результатами
+
+- Пять StrEnum сохраняют values/equality/hash/key lookup/JSON и legacy str,
+  f-string/percent-format/width через явные Enum methods. Display names/predicates
+  и настоящие API settings save/history JSON/readonly reopen сохранены.
+- Общий serializer использует precise object/list overloads и checked recursion.
+  DataclassInstance — только TYPE_CHECKING marker существующего typeshed; asdict
+  payload не выходит как unchecked Any. Path/datetime/enum/None/tuple/0/False,
+  legacy optional omission и explicit False/[]/error проходят одну реализацию.
+  Unsupported key/value и неверный ISO return явно отвергаются, не stringify-ятся.
+- Настоящий FastMCP Client → real factory/API/DTO/shared serializer → SDK structured
+  output проверен на nonempty object/list/search/error, description/transcript,
+  sidecars/media и readonly reopen/store preservation. Семь inner tool signatures,
+  defaults, return annotations/decorators и все десять tool names неизменны.
+- На активном реальном owner заменён только внешний network/media edge. SDK response
+  имел cancel_requested=False, artifact_paths=[], result_persisted/error_code=None;
+  после release — actual done/persisted, distinct physical bytes и get/reopen.
+  Это live **owner**, не live YouTube. Current own fixture bytes перечитаны отдельно.
+- Qt narrowing проверяет фактические installed currentData→Any и
+  instance→QCoreApplication|None declarations. Все9 selections/apply_settings,
+  обе темы/palette/HiDPI/nonempty pixmap, invalid None/int refusal, history
+  reload/filter/empty/deferred cleanup и новый usable item реально выполнены.
+  Отдельные absent/QCore child processes native0, полезная следующая color operation,
+  без лишнего QApplication. Color tables/QSS body AST-identical; это не GUI redesign,
+  visual/manual или GUI executable qualification.
+
+### Свежие независимые gates на frozen Q1
+
+| Проверка | Raw/native | Результат |
+|---|---:|---|
+| Addressed six modules | 0 |63 passed,0 skipped |
+| mypy src/ --ignore-missing-imports | 0 |No issues/68 source files |
+| Configured Ruff --config pyproject.toml + literal106 | 0 |Прежние E/F/I/UP и E501 exception, полный declared first-party scope |
+| Ruff --select E,F,I + literal31 | 0 |Непустой changed-candidate gate, не замена configured gate |
+| Full offline suite | 0 |291 passed,7 e2e deselected,0 skipped; exact old275 +new16 Counter |
+| Четыре source module smokes | 0 each |CLI help/MCP discovery/actual SDK stdio parity/offscreen compatibility |
+| Own scalar/key/ISO complement | 0 |Actual serializer, typed scalar identity/optional fields/error и safe invalid-input refusal |
+| Source/assertion/schema/physical/native reconciliation | 0 |Все шесть исходных Q1 obligations ACCEPTED |
+
+Mypy/Ruff не становились green через скрытие ошибок или неполный scope. Все291
+selected cases связаны с raw/decorated source/assertions, старые275 не потеряны;
+63/291/16 и прежние reruns не складываются как уникальные cases. Была полная ранняя
+изоляция profile/home/config/data/temp/cache/log/default output, winning YTDL_DATA_DIR,
+audited plugin/offline/no-sync policy и fresh native absolute basetemp до imports,
+collection и children; tests/downloads исключён до traversal. Own native Job/handle
+наблюдения подтверждают actual exits/cleanup; один wrapper/receipt не заменял exit.
+
+Original34/58/build1 и meaningful Qt/language RED сохранены. Ошибки авторских
+fixture calls отдельно атрибутированы, не выданы за product RED. Исправление own
+metadata release observer (porcelain leading-space) осталось отдельной raw1 попыткой,
+после corrected native0; продуктовые gates ради этого не переигрывались.
+
+### Документы, доставка и параллельный Q2
+
+После уже завершённой технической приёмки SAME Reviewer согласует materially
+affected docs и проверяет их final bytes/links/literal consumers отдельно.
+Принятые 31 source/test bytes не меняются. Для prose/Git phase291/types/Ruff
+не повторяются, old acceptance не открывается заново. Технический verdict,
+документационное завершение, local commit, push/literal readback и observed remote
+CI — отдельные факты; zero jobs/UNKNOWN не PASS.
+
+Q2 может выполнять явно непересекающуюся подготовку одновременно с этим завершением.
+Единственный общий source path build/build.py сохраняет accepted Q1 bytes до
+проверенного local commit/blob proof, затем освобождается **до push**. Unaccepted
+Q2 files и отдельно назначенные ffmpeg.py/test_ffmpeg_detection.py working deltas
+не входят в Q1 commit; whole-worktree cleanliness не требуется. Q1 results относятся
+к frozen committed-tree baseline, а не к меняющемуся peer working tree.
+
+**NOT_RUN / неизменные пределы:** imported PFK checker lint/recursive whole-root
+Ruff; Q2/PyInstaller/наша console EXE/relocation и полная functional CLI проверка
+этой сборки; реальный YouTube/network/codec (нет конкретного разрешённого URL);
+hosted CI/Linux/configured Python3.12/pwsh7, native Trash move/restore,
+visual/manual GUI/GUI build и whole legacy/native Qt privacy. Локальный Q1 проверен
+на Windows/Python3.14.2; mypy target3.12 не native Python3.12 execution.
+Synthetic media/Trash и source-tree/offscreen proofs этих границ не снимают.
+Текущий фокус Q2 — наша CLI-сборка и полезные полные командные сценарии, не GUI;
+Q1 не объявляет эту следующую работу выполненной.

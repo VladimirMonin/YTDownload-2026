@@ -12,13 +12,14 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from src.application.api import ApplicationAPI
 from src.application.dto import serialize_for_transport
 from src.infrastructure.mcp.tools._utils import error_payload
 
 logger = logging.getLogger(__name__)
 
 
-def create_get_transcript_tool(mcp: Any, api: Any) -> None:
+def create_get_transcript_tool(mcp: Any, api: ApplicationAPI) -> None:
     """Регистрирует инструмент get_transcript в FastMCP.
 
     Args:
@@ -107,11 +108,12 @@ def create_get_transcript_tool(mcp: Any, api: Any) -> None:
             result = serialize_for_transport(
                 api.get_transcript(id, lang=lang, raw=raw, timestamps=timestamps)
             )
+            text = result.get("transcript_text")
             logger.info(
                 "mcp.get_transcript id=%d timestamps=%s text_len=%d",
                 id,
                 timestamps,
-                len(result.get("transcript_text") or ""),
+                len(text) if isinstance(text, str) else 0,
             )
             return result
 

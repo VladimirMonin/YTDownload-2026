@@ -5,12 +5,8 @@
 
 from __future__ import annotations
 
-import json
 import threading
 from pathlib import Path
-from unittest.mock import MagicMock, patch
-
-import pytest
 
 # ─────────────────────────────────────────────────────────────────────────────
 # AppSettings
@@ -21,7 +17,7 @@ class TestAppSettings:
     """Тесты сериализации AppSettings."""
 
     def test_to_dict_roundtrip(self, tmp_path: Path) -> None:
-        from src.domain.models.app_settings import AppSettings, QualityOption, DownloadType
+        from src.domain.models.app_settings import AppSettings, DownloadType, QualityOption
 
         s = AppSettings(
             output_dir=tmp_path,
@@ -181,7 +177,7 @@ class TestYtDlpFormatStrings:
     """Тесты форматных строк yt-dlp (без сети)."""
 
     def test_build_format_best(self) -> None:
-        from src.domain.models.app_settings import QualityOption, DownloadType
+        from src.domain.models.app_settings import QualityOption
         from src.domain.models.download_task import DownloadTask
         from src.infrastructure.ytdlp_service import _build_format_string
 
@@ -199,7 +195,7 @@ class TestYtDlpFormatStrings:
         assert "1080" in fmt
 
     def test_build_format_audio_only(self) -> None:
-        from src.domain.models.app_settings import QualityOption, DownloadType
+        from src.domain.models.app_settings import DownloadType, QualityOption
         from src.domain.models.download_task import DownloadTask
         from src.infrastructure.ytdlp_service import _build_format_string
 
