@@ -52,4 +52,6 @@ def test_server_http_runtime_failure_returns_nonzero(monkeypatch, capsys) -> Non
     exit_code = cli_root.main(["server", "http"])
 
     assert exit_code == cli_root.EXIT_RUNTIME_ERROR
-    assert "Error: boom" in capsys.readouterr().err
+    error = capsys.readouterr().err
+    assert "Operation could not be completed" in error
+    assert "boom" not in error and "Traceback" not in error

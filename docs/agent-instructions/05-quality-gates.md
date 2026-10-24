@@ -23,8 +23,16 @@ For runtime refactoring (including the command-first migration):
 - Run and baseline-attribute `uv run --locked --no-sync mypy src/ --ignore-missing-imports`;
   full-project legacy findings remain visible, new owned type/lint failures require repair.
 - On a bounded repair, preserve the previous verdict/RED and verify unchanged source/assertion/environment applicability before reusing passed checks. Run the named delta regression and affected sibling gates, not full suite/type/foundation replays without new impact. A child smoke exit0 cannot replace competing-store preservation/no-lock and real cleanup evidence.
+- For adapter/lifetime changes verify actual native CLI acceptance/terminal/exits,
+  real SDK stdio tools and EOF, managed loopback HTTP effects/stop/join/port reuse,
+  actual offscreen Qt actions/modal/settings, and partial setup/close failures.
+  Borrowed runtime and early/late caller handlers must remain the same usable
+  objects; prove actual after-context writes and owned release, not reconstruction.
+  Disclosure of substituted network/Trash edges and scoped privacy limits remains required.
 - The assigned independent Pi Reviewer evaluates the frozen coherent candidate;
-  author tests are not independent acceptance. GUI redesign and live YouTube E2E are out of scope.
+  author tests are not independent acceptance. S1–S5 are accepted within recorded
+  bounds (S5-R1 closed), not S6/platform/live/native-Trash qualification. GUI redesign
+  and live YouTube E2E are out of scope.
 
 ## Known baseline caveat
 

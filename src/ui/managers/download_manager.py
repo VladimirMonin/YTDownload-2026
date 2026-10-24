@@ -11,10 +11,14 @@ from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QObject, Signal
 
+from ...application.command_api import CommandError
+from ...application.dto import QueryErrorDTO
 from ...core.event_bus import EventBus
+from ...domain.models.download_task import DownloadStatus, DownloadTask
 
 if TYPE_CHECKING:
-    from ...application.download_coordinator import DownloadCoordinator
+    from ...application.api import ApplicationAPI
+    from ...application.dto import TaskSnapshotDTO
 
 logger = logging.getLogger(__name__)
 
@@ -38,11 +42,11 @@ class DownloadManager(QObject):
 
     def __init__(
         self,
-        coordinator: "DownloadCoordinator",
+        application_api: "ApplicationAPI",
         event_bus: EventBus,
     ) -> None:
         super().__init__()
-        self._coordinator = coordinator
+        self._api = application_api
         self._event_bus = event_bus
         self._subscribe()
 
@@ -81,7 +85,7 @@ class DownloadManager(QObject):
         Returns:
             Числовой ID задачи.
         """
-        return self._coordinator.add(
+        return self._api.queue_add_download(
             url=url,
             quality=quality,
             download_type=download_type,
@@ -89,11 +93,30 @@ class DownloadManager(QObject):
             save_subtitles=save_subtitles,
             save_description=save_description,
             save_thumbnail=save_thumbnail,
-        )
+        ).task_id
 
     def cancel(self, task_id: int) -> None:
-        """Отменяет загрузку по ID."""
-        self._coordinator.cancel(task_id)
+        """Запрашивает отмену; финальный статус приходит после quiescence."""
+        self._api.cancel_download(task_id)
+
+    @staticmethod
+    def _view(snapshot: "TaskSnapshotDTO") -> DownloadTask:
+        """Detached presentation mapping for the unchanged card widget."""
+        return DownloadTask(id=snapshot.id, url=snapshot.url, title=snapshot.title,
+            playlist_title=snapshot.playlist_title, status=DownloadStatus(snapshot.status),
+            progress=snapshot.progress or 0.0, speed=snapshot.speed or 0.0,
+            eta_seconds=snapshot.eta_seconds or 0, error_message=snapshot.error_message,
+            cancel_requested=snapshot.cancel_requested, result_persisted=snapshot.result_persisted,
+            error_code=snapshot.error_code)
+
+    def get_task(self, task_id: int) -> DownloadTask | None:
+        snapshot = self._api.get_task(task_id)
+        if isinstance(snapshot, QueryErrorDTO):
+            raise CommandError(snapshot.error, code=snapshot.code, hint=snapshot.hint)
+        return self._view(snapshot) if snapshot is not None else None
+
+    def list_tasks(self) -> list[DownloadTask]:
+        return [self._view(snapshot) for snapshot in self._api.list_tasks()]
 
     # ── EventBus callbacks (вызываются из фонового потока) ──────
 
@@ -103,7 +126,7 @@ class DownloadManager(QObject):
     def _on_started(self, task_id: int, **_) -> None:
         self.task_started.emit(task_id)
         # Обновляем задачу для получения title
-        task = self._coordinator.get_task(task_id)
+        task = self.get_task(task_id)
         if task and task.title:
             self.task_title_updated.emit(task_id, task.title)
 
@@ -113,7 +136,7 @@ class DownloadManager(QObject):
     def _on_done(self, task_id: int, **_) -> None:
         self.task_done.emit(task_id)
         # Обновляем title если изменился
-        task = self._coordinator.get_task(task_id)
+        task = self.get_task(task_id)
         if task and task.title:
             self.task_title_updated.emit(task_id, task.title)
 

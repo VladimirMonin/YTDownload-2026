@@ -6,10 +6,12 @@
 
 Разработка: [AGENTS.md](AGENTS.md), [инженерная документация](docs/engineering.md),
 [философия command-first](docs/foundation/project-philosophy.md). Исходный GUI
-сохраняется. Независимо приняты S1–S4: isolated baseline, runtime/storage,
-cooperative cancellation, truthful outcomes/snapshots, task-ID output attribution
-и ограниченное удаление через Application API. Успешная передача delete token
-в CLI/MCP/GUI и полный lifetime/platform matrix остаются S5–S6:
+сохраняется. Независимо приняты S1–S5: isolated baseline, runtime/storage,
+cooperative cancellation, truthful outcomes/snapshots, task-ID output attribution,
+ограниченное удаление и реальные CLI/MCP/GUI adapters с явным lifetime. S5-R1
+сохранности caller-owned logging handlers закрыт. Итоговая qualification/CI
+alignment остаётся S6; live/codec, native Trash, Linux/CI и EXE/manual visual
+не квалифицированы:
 [план](docs/command-first/PLAN.md),
 [предлагаемый контракт](docs/command-first/CONTRACT.md),
 [фактическая проверка и ограничения](docs/command-first/VERIFICATION.md).
@@ -100,7 +102,7 @@ AI-агенты (Claude, Cursor, VS Code Copilot, Cline) могут управл
 
 ```bash
 uv run --locked --no-sync python app.py
-# MCP доступен на http://127.0.0.1:8765/mcp сразу после старта
+# Default endpoint: http://127.0.0.1:8765/mcp после подписок/восстановления окна
 ```
 
 **Автономный запуск MCP сервера (HTTP, без GUI):**
@@ -130,8 +132,8 @@ uv run --locked --no-sync python -m scripts.smoke_mcp_stdio
 interpreter `-m scripts.smoke_mcp_stdio --serve`; child вызывает настоящий CLI
 `main(["server", "stdio"], services=...)` и finally joins свой legacy coordinator.
 Проверяются discovery parity и cleanup receipt с timeout. Это реальный stdio
-protocol boundary, но не tool-effect E2E, не загрузка и не доказательство lifetime
-неизменённого standalone CLI. Детали — [CLI/MCP/GUI](docs/agent-instructions/04-mcp-and-gui.md).
+protocol boundary, но не tool-effect E2E или загрузка. Отдельные S5 integration
+cases проверяют standalone lifetime и useful tool effects. Детали — [CLI/MCP/GUI](docs/agent-instructions/04-mcp-and-gui.md).
 
 ### Unified CLI / MCP contract
 
@@ -145,6 +147,15 @@ uv run --locked --no-sync python -m src.interfaces.cli history list --format jso
 uv run --locked --no-sync python -m src.interfaces.cli server http --host 127.0.0.1 --port 8765
 uv run --locked --no-sync python -m src.interfaces.cli server stdio
 ```
+
+Standalone `queue add` flush-ит acceptance, затем ждёт реальный итог: exit0 —
+только done+persisted, failure/cancel/unsaved — exit1 со safe stderr error, без
+второго stdout JSON. Встроенный `cli.main(..., services=...)` возвращает acceptance
+без wait/close чужого runtime. History queries/preview — readonly snapshot без
+lease/recovery/write. `--data-dir` выбирает профиль, не подключение к GUI;
+standalone `queue cancel` отказывает OWNER_REQUIRED до создания пустой очереди.
+GUI и embedded HTTP используют один owner; disconnect клиента не отменяет Job.
+Entry закрывает admission, transport/bridges и действительно join-ит runtime.
 
 Offline validation для этого контракта:
 
@@ -170,7 +181,7 @@ uv run --locked --no-sync python -m scripts.smoke_mcp_stdio
 | `read_description(id)` | Текст .description файла ролика |
 | `add_download(url, quality?, ...)` | Добавить URL в очередь загрузки |
 | `cancel_download(id, confirm?)` | Отмена активной загрузки (двухфазная) |
-| `delete_download(id, delete_files?, confirm?)` | Предпросмотр; текущий confirm без plan token безопасно отказывает |
+| `delete_download(id, delete_files?, confirm?, plan_token?)` | Preview → согласие → тот же ID/режим/token; exact files или history-only |
 
 Канонический source of truth для имён/count живёт в
 `src/infrastructure/mcp/manifest.py`; `scripts/mcp_expected_tools.py`,
@@ -186,9 +197,9 @@ uv run --locked --no-sync python -m scripts.smoke_mcp_stdio
 - `uv run --locked --no-sync python -m scripts.smoke_gui` — offscreen window/show/events/close, не полный интерактивный workflow и не HTTP lifecycle `app.py`.
 
 Выполнять из корня после [pre-process isolation](.github/instructions/testing.instructions.md).
-Smokes выделяют ещё более узкий owned subtree; synthetic файлы сохраняются. Их
-временный private executor cleanup не заменяет будущий public ApplicationRuntime.
-Общая библиотека также не означает общую живую очередь разных процессов.
+Smokes выделяют ещё более узкий owned subtree; synthetic файлы сохраняются.
+Discovery cleanup не заменяет отдельные active-job/entry lifetime proofs S5.
+Общая библиотека не означает общую живую очередь разных процессов.
 
 ### Opt-in real validation gates
 
@@ -303,8 +314,11 @@ output_dir/                         # Выбранный root; default home/Down
 
 ## 🏗️ Архитектура
 
-Ниже — направление разделения ответственности, не заявление о завершённой
-независимости ядра. Существующие обходы API и целевые owners описаны в [PLAN](docs/command-first/PLAN.md).
+CLI, MCP и existing GUI managers вызывают один Application API; независимое
+application/domain ядро не импортирует Qt, CLI parser или MCP SDK. Canonical MCP
+factory живёт в infrastructure, принимает существующий API и не создаёт другую
+очередь. [PLAN](docs/command-first/PLAN.md) сохраняет исходные причины/целевые owners,
+[VERIFICATION](docs/command-first/VERIFICATION.md) — текущую ограниченную приёмку.
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -340,7 +354,7 @@ uv run --locked --no-sync ruff check --select E,F,I <changed-python-files>
 ```
 
 Подставить непустой список изменённых Python-файлов. Полный lint/type baseline
-не равен changed-file gate: глобальный mypy после S4 остаётся inherited exit1 с теми же 34 ошибками/15 файлами;
+не равен changed-file gate: глобальный mypy после S5 остаётся inherited exit1 с теми же 34 ошибками/15 файлами;
 подробности — [VERIFICATION](docs/command-first/VERIFICATION.md). Live E2E требует
 отдельного явного разрешения с конкретным URL; примеры в руководстве его не дают.
 Изменения только документации требуют affected checks, не автоматического повторения suite.
@@ -371,8 +385,9 @@ queued/downloading/merging становятся failed/INTERRUPTED без replay
 `close(cancel=False, wait=True)` ждёт принятое, `cancel=True` запрашивает cooperative
 stop. `wait=False` не означает closed и удерживает lease до реального join.
 Borrowed wrapper не закрывает caller. Standalone adapter lifetime/read-only CLI
-mode остаётся S5; `--data-dir` пока не добавлен в parser. Отдельные процессы с
-одной библиотекой не разделяют live queue.
+и `--data-dir` проверены в S5; отдельные процессы с одной библиотекой не разделяют
+live queue. MainWindow/HTTP handle только заимствуют runtime, desktop/server entry
+владеет окончательным close. Ошибка или неполный cleanup даёт nonzero, не ложный closed.
 
 В S3 `queue_add_download` возвращает принятие, не файл. `get_task` и
 `wait_for_download(id, timeout=...)` дают detached snapshots; timeout прекращает
@@ -393,7 +408,7 @@ Unknown progress/speed/eta — None; измеренный0 остаётся0. Se
 `get_settings()` возвращает копию; `update_settings()` сохраняет до публикации
 новых defaults. Overrides при construction сами по себе не записываются. JSON
 ошибки не превращаются в defaults/успех: STORAGE_CORRUPT/PERSISTENCE_FAILED/OWNER_BUSY
-доступны в direct API exceptions; полное transport mapping ещё впереди. Политика и
+доступны в API и safe transport mapping; unexpected exceptions не раскрывают raw text. Политика и
 границы — [CONTRACT](docs/command-first/CONTRACT.md), [окружение](docs/agent-instructions/02-environment-and-dependencies.md).
 
 ## Ограниченное удаление через Application API
@@ -423,10 +438,19 @@ Default adapter — lazy QtCore Trash без QApplication и без permanent-de
 installed capability; **native Trash move/restore остаётся NOT_RUN**, не гарантия
 восстановления на каждом OS/volume. Media+JSON не crash-atomic transaction.
 
-Текущие CLI/MCP/GUI adapters ещё не передают новый token: обычный API-based confirm
-без него отказывает, включая keep-files. Успешная adapter-проводка и удаление
-legacy bypass — S5; ни новый флаг parser, ни общая безопасность всех старых путей
-этим не заявлены. Подробнее — [руководство](docs/README.md#6-история-загрузок) и
+В S5 CLI `--plan-token`, MCP `plan_token` и существующий GUI modal передают
+matching plan; legacy repository-delete fallback удалён. GUI готовит оба режима
+до диалога: No сохраняет данные, Yes использует выбранный token, изменение во
+время modal безопасно отказывает. Пример ручного history-only workflow:
+
+```bash
+uv run --locked --no-sync python -m src.interfaces.cli --json history delete 42 --keep-files --preview
+uv run --locked --no-sync python -m src.interfaces.cli --json history delete 42 --keep-files --confirm --plan-token TOKEN_FROM_PREVIEW
+```
+
+Вторую команду выполняют только после просмотра результата и согласия. Token не
+удостоверяет человека; после partial/lost response нужно новое подтверждение.
+Общая legacy/native Qt privacy не заявлена. Подробнее — [руководство](docs/README.md#6-история-загрузок) и
 [принятый scope/ограничения](docs/command-first/VERIFICATION.md).
 
 ## 🔧 Переменные окружения
@@ -435,7 +459,7 @@ legacy bypass — S5; ни новый флаг parser, ни общая безо�
 |------------|-------------|----------|
 | `YTDL_DATA_DIR` | APPDATA/YTDownloader либо home/YTDownloader | Непустой data-root override; явный Python `data_root` выше env. Под ним config/data/logs; handlers настраиваются отдельно. Smoke всегда переопределяет его в собственный subtree и восстанавливает после проверки |
 | `YTDL_LOG_LEVEL` | `INFO` | Уровень логирования (`DEBUG`/`INFO`/`WARNING`); DEBUG не разрешает пользовательское содержимое |
-| `YTDL_LOG_DIR` | `logs/` рядом с проектом | Непустой override для `setup_logging()` без аргумента; явный `log_dir` выше env. GUI `app.py` передаёт свой APPDATA log path |
+| `YTDL_LOG_DIR` | Entry: выбранный data root/logs; readonly CLI без override — stderr | Непустой override GUI/CLI contexts. GUI fallback: YTDL_DATA_DIR → APPDATA/home. Legacy setup_logging без аргумента сохраняет fallback project/logs; entry contexts закрывают только acquired handlers, сохраняя caller objects |
 | `YTDL_FFMPEG_PATH` | auto-detect | Явный путь к исполняемому `ffmpeg`; без него используется `vendor/ffmpeg/bin` или системный `PATH` |
 | `YTDL_FFPROBE_PATH` | auto-detect | Явный путь к `ffprobe` для тестов и диагностики |
 | `YTDL_FFPLAY_PATH` | auto-detect | Явный путь к `ffplay` для тестов и диагностики |

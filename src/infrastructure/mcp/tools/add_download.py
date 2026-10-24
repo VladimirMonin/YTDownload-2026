@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from src.application.command_api import CommandError
+from src.infrastructure.mcp.tools._utils import error_payload
 
 logger = logging.getLogger(__name__)
 
@@ -106,12 +106,7 @@ def create_add_download_tool(mcp: Any, command_api: Any) -> None:
                 save_description=save_description,
                 save_thumbnail=save_thumbnail,
             )
-            logger.info(
-                "mcp.add_download id=%d quality=%s type=%s",
-                result.task_id,
-                quality,
-                download_type,
-            )
+            logger.info("mcp.add_download id=%d", result.task_id)
             return {
                 "task_id": result.task_id,
                 "status": result.status,
@@ -120,8 +115,7 @@ def create_add_download_tool(mcp: Any, command_api: Any) -> None:
                     "Use get_download(id) when done to get file paths."
                 ),
             }
-        except CommandError as exc:
-            return {"error": exc.message, "hint": exc.hint}
-        except Exception as exc:
-            logger.error("mcp.add_download.error", exc_info=True)
-            return {"error": str(exc), "hint": "Check app logs for details"}
+        except Exception as error:
+            payload = error_payload(error)
+            logger.error("mcp.add_download.failed reason_code=%s", payload["code"])
+            return payload

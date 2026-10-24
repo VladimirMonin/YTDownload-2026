@@ -55,8 +55,21 @@ transaction or a power-loss guarantee.
 
 For tests/smokes assign an owned YTDL_DATA_DIR before collection/import; the smoke
 helper additionally overrides it into its own subtree and restores it in finally.
-Existing CLI/MCP/GUI entrypoints are not an external Attached client; complete
-read-only/standalone adapter lifetime migration and CLI `--data-dir` remain S5.
+CLI `--data-dir` selects this process's profile, not an external Attached owner.
+History queries/preview use a readonly snapshot without lease/recovery/write;
+standalone add owns its runtime, flushes acceptance and waits for terminal/save.
+Standalone cancel refuses OWNER_REQUIRED before creating an empty profile.
+Borrowed `cli.main(..., services=...)` returns acceptance without waiting/closing
+its caller. GUI and embedded HTTP share the supplied runtime; desktop/server
+entrypoints own final admission/transport/worker shutdown. Cancellation is
+cooperative, not a promise of bounded process-exit latency.
+
+GUI logging prefers nonempty YTDL_LOG_DIR, then selected YTDL_DATA_DIR/logs, then
+APPDATA/YTDownloader/logs (home fallback). Standalone writable CLI uses an explicit
+log override or its selected data root/logs; readonly CLI without an override
+writes diagnostics only to stderr, never creates a profile just to log. Injected
+CLI also avoids an implicit file root. Contexts release only their acquired
+handlers and retain the same early/late caller handlers; see [logging](../../.github/instructions/logging.instructions.md).
 
 ## S4 file-effect boundary
 
@@ -72,8 +85,10 @@ records permit checked keep-files, not a directory scan. Active/unquiesced jobs,
 links/reparse ancestry and shared attribution block file effects. Partial moves
 and failed history save are not rollback or confirmed deletion; read the structured
 result and repreview. Synthetic recoverable moves and installed capability were
-verified; native Trash move/restore remains NOT_RUN. Complete adapter confirmation
-and lifetime wiring remain S5. See [current evidence](../command-first/VERIFICATION.md).
+verified; native Trash move/restore remains NOT_RUN. S5 CLI --plan-token, MCP
+plan_token and the existing GUI modal pass the selected matching expectation.
+No-token/stale/partial outcomes still require safe refusal or a fresh preview,
+not a bypass. See [current evidence](../command-first/VERIFICATION.md).
 
 ## FFmpeg policy
 

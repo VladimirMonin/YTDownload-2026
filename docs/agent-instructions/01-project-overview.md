@@ -22,8 +22,8 @@ requested, not assumed complete from the existence of an API module.
 - `src/bootstrap.py` — explicit `create_runtime`, paths, lazy factories and writer lease acquisition.
 - `src/domain/` — data models and protocols.
 - `src/application/` — ApplicationAPI, command/query semantics, DTOs, queue coordinator and owned/borrowed runtime lifetime.
-- `src/interfaces/cli/` — existing CLI parser and transport bootstrap.
-- `src/infrastructure/` — yt-dlp, repositories, FFmpeg detection, MCP server.
+- `src/interfaces/cli/` — parser, formatting, readonly/writable selection and process lifetime; bootstrap reexports the infrastructure MCP factory.
+- `src/infrastructure/` — yt-dlp, repositories, FFmpeg detection, canonical MCP factory and owned HTTP socket/server/thread handle.
 - `src/ui/` — PySide6 widgets, managers, theme, icons.
 - `tests/` — offline unit tests plus opt-in E2E tests.
 
@@ -36,5 +36,5 @@ requested, not assumed complete from the existence of an API module.
 - Keep `AGENTS.md` as the required entry point and put detailed agent rules under `docs/agent-instructions/`.
 - Canonical testing/logging procedures remain in `.github/instructions/` and are linked
   from AGENTS; do not duplicate those policies under a second editable owner.
-- S1–S4 are independently accepted for bounded scopes: owned cancellation/outcomes, coherent snapshots/task attribution and token-bound exact-file deletion with partial/persistence results. Positive CLI/MCP/GUI token wiring and complete adapter lifetime remain S5; final qualification is S6. Native Trash move/restore and blanket legacy privacy are not certified. Normative PLAN/CONTRACT are preserved; current disposition is in [verification](../command-first/VERIFICATION.md).
+- S1–S5 are independently accepted for bounded scopes, including real CLI/stdio/HTTP/Qt paths, token wiring, owned/borrowed adapter lifetime and S5-R1 handler preservation. GUI managers use the same API, detached settings and the existing modal; no repository-delete fallback or visual redesign. Standalone CLI queries are readonly, own add waits, standalone cancel refuses OWNER_REQUIRED; --data-dir is not attach. Final qualification/CI alignment is S6. Native Trash move/restore, live downloads, Linux/CI, EXE/manual visual and blanket legacy privacy remain unqualified. Normative PLAN/CONTRACT remain requirements; current disposition is in [verification](../command-first/VERIFICATION.md).
 - GUI layout/design is out of scope for the current command-first refactor.

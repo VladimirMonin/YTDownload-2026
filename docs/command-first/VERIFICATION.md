@@ -6,10 +6,10 @@ status: accepted
 created: "2026-10-23"
 updated: "2026-10-23"
 areas: [testing, isolation, logging, compatibility]
-summary: "Независимо принят только S1: isolated offline baseline, log-root/fixtures и bounded smokes; история авторских проверок и явные пределы S2–S6."
-code_ref: "0abda8e2959b53561e8327f40c53118c944c94f8"
-code_verified_at: "2026-10-23"
-verification_scope: "S1 на базе 0abda8e в refactor/command-first; Python candidate bytes сохранены неизменными при независимом review. Документационное завершение отдельно от runtime проверки; S2–S6 не приняты."
+summary: "Независимо приняты S1–S5 в ограниченных scope, S5-R1 закрыт; historical RED и пределы S6/live/platform/native qualification сохранены."
+code_ref: "1cfda355cff364786638c3618332131d49b8130c"
+code_verified_at: "2026-10-24"
+verification_scope: "Последняя accepted база S4 и cumulative S5 successor manifest3c2aabf4; whole-S5 independently ACCEPTED после addressed R1. Source bytes frozen, docs finish отдельно; S6/remote CI/native Trash/live/EXE/manual visual не квалифицированы."
 related: [ytdl-command-first-plan, ytdl-command-first-contract]
 ---
 
@@ -931,3 +931,212 @@ Trash effect. Все own workers/leases/handlers/barriers/наблюдённые
 remote ref readback и exact-head CI — отдельные факты. Отсутствие branch-trigger
 проверок не CI PASS. После публикации/освобождения следующий срез назначается
 по существующему командному порядку; S5 в этой приёмке не начинался.
+
+## S5 — авторский связный кандидат адаптеров (2026-10-24)
+
+Это новый author evidence, не изменение исторической приёмки S4 и не независимый
+ACCEPTED. База: `1cfda355cff364786638c3618332131d49b8130c`, ветка
+`refactor/command-first`; S6 не начинался. Evidence сохранён отдельно от Git
+в авторском пакете S5; его исходные artifacts/failed runs неизменны.
+
+Canonical MCP factory теперь в infrastructure/server; bootstrap сохраняет
+reexports, десять manifest tools и их прежние defaults. Factory/listener/window
+заимствуют один ApplicationAPI, не создают вторую очередь. CLI выбирает readonly
+queries, передаёт plan token, отказывает standalone cancel до runtime creation.
+Owned add печатает один flushed acceptance, ждёт настоящий terminal/persistence
+и закрывает свой runtime; borrowed add не ждёт и не закрывает owner.
+
+GUI managers используют detached API queries/settings и общие add/cancel/delete.
+Repository-delete fallback убран. До существующего modal готовятся оба режима;
+Yes передаёт token выбранного checkbox, No ничего не меняет, stale не удаляет.
+Desktop создаёт subscriptions и восстанавливает list_tasks до HTTP admission.
+Настоящий uvicorn.Server имеет stop/join; window/listener не закрывают borrowed
+runtime. Desktop finally останавливает admission, закрывает transport/bridges и
+дожидается runtime. Cleanup error не становится успешным exit/closed: при отказе
+resource-close accepted core сохраняет lease; после устранения controlled external
+fault повторный close освобождает его, сохраняя исторический error code.
+
+| Обязательная строка S5 | Исполненное основание |
+|---|---|
+| Native CLI | Настоящий module/parser/bootstrap/JSON store: list/get/description/transcript/paths, writer-held readonly snapshot, absent/corrupt store, missing/usage/JSON channels, wrappers/help, token keep-files и reopen |
+| Owned add/lifetime | Четыре настоящих дочерних entry: acceptance прочитан до release, worker удержан, done/cancel/fail/persistence exits 0/1/1/1, ровно один stdout JSON, durable readback и следующий writer; native Windows no-delete-sharing handle вызывает реальный atomic-replace refusal, не fake save |
+| Native MCP stdio | SDK discovery/get/list/read_description/missing, две реальные no-token/preview/apply границы, matching-token keep-files/reopen; два наблюдённых child exit0, включая EOF с настоящей отменой/terminal persistence; отдельный in-process SDK add/cancel использует тот же runtime |
+| Managed HTTP | Реальные loopback calls/эффекты, OS-allocated port, disconnect без отмены job, cooperative intent до quiescence, stop/join/idempotence/port reuse, borrowed owner остаётся полезен; foreign bind сохранён |
+| Actual offscreen GUI | Existing cards получают restored/API/MCP/GUI-button jobs, cancel button не делает terminal до release; history filter сохранён; шесть настоящих modal/button/signal случаев No/Yes/stale × оба режима, real fixture Trash moves и preservation; settings Cancel/Save/theme проходят через detached API |
+| Startup/cleanup | Partial port factory, actual bind refusal, actual partial window construction, public subscription/unsubscription readback, controlled resource-close failure/recovery, повторный close и следующий writer; real partial log-open failure закрывает только own handlers |
+
+Окончательный full offline: **270 passed, 7 e2e deselected, 0 skips**, raw/native0
+(`runs/pytest-offline-corrected-observer`). JUnit содержит все прежние239 case IDs
+и31 новых connected cases; это один suite, не сумма пересекающихся прогонов.
+Changed-Python Ruff E/F/I — PASS; четыре module smokes — raw/native0.
+Full mypy — **raw1, 34 findings/15 files, 68 checked**, не type PASS. Сопоставление
+file/enclosing-symbol/message/code/multiplicity с сохранённым S4 baseline даёт
+new0/removed0; первоначальные43/18 с новыми owned findings сохранены и исправлены.
+
+Настоящие GUI/MCP/CLI emitters прошли formatter/handlers/flush: main1772 bytes,
+error340, stderr1677, отдельный CLI error72; stdout0 для diagnostic operations.
+Проверены полезные ID/code/count и отсутствие synthetic URL/proxy/title/path/raw
+error sentinels; пользовательские title/description отдельно остаются полезными
+protocol results. Это не whole-legacy/native Qt privacy certification.
+
+Сохранены первый полезный readonly RED и все setup/assertion/teardown failures:
+SDK-generated schema dataclasses вместо предполагаемого dict/model, slots-only API
+observer, настоящий Qt standard button, неверное ожидание clean resource-close и
+текстовое ожидание stale message. Начальный full269/1 сохранил deferred Qt terminal
+signal до teardown; corrected observer запускает настоящий новый Qt event loop и
+проверяет исполнение callback, не меняет production emitter/результат. Timeout не
+увеличен, skip/xfail/selection bypass не добавлены. Final native supervision
+фиксирует завершённые собственные handles, без watchdog emergency cleanup.
+
+**NOT_RUN:** independent S5 acceptance/publication/remote CI, native Trash
+move/restore, live network/YouTube/codec quality, Linux runtime, packaged EXE/manual
+visual GUI, whole legacy privacy, S6. Подменены external network backend и OS Trash
+(real fixture renames); отрицательные startup/open/replace failures и публичные
+transparent observers отдельно связаны с исходниками. Ни user Trash, ни реальные
+профили/медиа не использовались. Автор не stage/commit/push и не принимает свой срез.
+
+## S5-R1 — авторский repair-01 после независимого NEEDS_CHANGES
+
+SAME Reviewer обнаружил конкретное нарушение ownership в CLI `_diagnostics` и
+`app._logging`: finally закрывал/терял caller-owned handler, подключённый во время
+invocation. Его два реальных controls raw/native1 и whole-S5 NEEDS_CHANGES остаются
+неизменной историей. Предыдущие270 PASS не были доказательством сохранности такого
+ресурса и не означали ACCEPTED.
+
+Минимальная правка только двух logging contexts: список `owned` наполняется при
+acquire, formatter/JSON-level changes и flush/close/remove применяются к нему.
+Старые borrowed handlers возвращаются публичным addHandler без замены текущего
+root list, поэтому late caller handlers не теряются. Сами caller objects/streams
+не переоткрываются; mode='w' не может усечь их прежние bytes. Root/logger levels,
+owned partial-open cleanup и сообщение cleanup error сохранены.
+
+До реализации добавлены пять случаев в двух существующих adapter modules: реальный
+borrowed CLI/parser/API/coordinator/queued subscriber при normal/cleanup-error и
+настоящий desktop logging context при normal/body-error/cleanup-error. Все пять
+на исходных rejected production bytes дали meaningful RED именно на late handler
+identity/registration; jobs при этом реально завершались done/persisted, bytes и
+следующий запрос/writer проверены, finally исполнен. После правки те же assertions
+GREEN. Проверяются прежний stream object, root registration, before/during/after
+физические записи, owned file closure/rename и полезная следующая операция.
+
+Оба независимых immutable control helper скопированы без изменения bytes и запущены
+только с новым `REVIEW_RUN_ROOT` в `coder-evidence/s5/repair-01/runs/`: оба raw/native0.
+Это авторский recheck исходных controls, не новая независимая приёмка. Desktop
+control подтверждает logging context, а не визуальную GUI-квалификацию.
+
+Свежие repair gates: affected modules **36 passed**, full offline **275 passed,
+7 e2e deselected, 0 skips**, cumulative24-Python E/F/I и четыре отдельные module
+smokes raw/native0. Full mypy raw/native1: прежние **34 findings/15 files/68 checked**,
+точные identities совпадают с независимым S5 baseline, new0/removed0; не type PASS.
+Сохранены все270 прежних selected IDs/декораторов/assertions, добавлены5. Пересекающиеся
+5/36/275 и прежние54/270 не складываются. S1–S4 campaign не повторялась.
+
+Repair delta ограничен этими двумя contexts, добавленными regression functions и
+данным factual append. Остальные20 predecessor candidate paths и55 protected bytes
+не изменены; прежний VERIFICATION prefix сохранён. Для всей шестистрочной матрицы
+используются свежие275 и явно связанное неизменное evidence прежней проверки,
+а не только последний R1 assertion. Полный cumulative25 successor сохранён
+в авторском repair-01/final пакете отдельно от Git.
+Все ограничения native Trash/live/platform/package/privacy/CI остаются прежними.
+Статус автора READY_FOR_REVIEW, whole-S5 verdict SAME Reviewer ещё ожидается;
+commit/push и S6 не выполнялись.
+
+## S5 — независимая приёмка repair-01 и текущего целого среза (2026-10-24)
+
+**WHOLE-S5 ACCEPTED; S5-R1 CLOSED.** Предыдущий NEEDS_CHANGES относится к
+predecessor manifest `8b273484ed175a44d8b2a447333ab76624911959e1a20150c8964008461addf4`;
+он и оба настоящих RED controls raw1 не переписаны и не объявлены успешными.
+Текущий coherent successor — manifest
+`3c2aabf4e37bcf0604e548094d26a3f8033055a67b9a8ebbe42708c78c2f8ade`,
+author archive `881624fe9131b806d5bb2f91a2943c83788288e010dfdd9b9cafb1af3dda1b6d`,
+на accepted/published S4 базе `1cfda355cff364786638c3618332131d49b8130c`.
+Это не S6 final qualification.
+
+До helpers/product producers независимо скопированы/связаны все25 cumulative
+paths (24 Python/3 new), полный archive и author evidence. Пять repair paths
+ограничены двумя logging function bodies, append-only regression functions и
+factual verification. Остальные20 candidate и55 protected paths unchanged;
+93 finite input identities и все прежние270 selected cases/assertions/decorators
+сохранены. Текущий паспорт документа обновлён отдельно; исторические body/RED
+сохранены, новые machine-local evidence paths не публикуются.
+
+### Закрытие S5-R1
+
+Оба byte-identical исходных независимых controls исполнены заново только в новых
+owned roots, с прежним business route/assertions: **raw/native0/0**. CLI проходит
+настоящие parser/API/coordinator и genuine queued EventBus subscriber; caller
+подключает свой заранее открытый handler во время полезной работы. Тот же late
+object/stream остаётся открыт/зарегистрирован, physical after-write присутствует;
+early handler также сохранён. Acceptance0, done/persisted/media/close/next writer
+действительно проверены. Только external network backend синтетический.
+
+Второй control исполняет настоящий app._logging и nonempty app/error sinks;
+это logging-context, не новая visual GUI qualification. Пять новых cases
+дополнительно проверяют SAME streams/objects и before/during/after bytes,
+normal/body exception/owned cleanup fault, actual owned close/remove и полезную
+следующую операцию. Caller FileHandler(mode='w') не пересоздаётся/не переоткрывается.
+Existing partial file-open failure и root/logger restoration сохранены. Ошибка
+owned cleanup остаётся безопасным nonzero/CommandError, не подавленным success.
+
+### Независимые fresh executions
+
+Pre-import/collection изоляция и audited plugin policy соответствуют testing
+instruction: winning owned YTDL_DATA_DIR/home/temp/cache/log/output, absolute
+forward-slash basetemp, offline/no-sync/no-download/UTF8/no-bytecode/offscreen/
+no-tracking; OS essentials не печатались. Existing .venv, независимый bounded
+Windows Job watcher, actual own descendant handle exits и finally cleanup.
+
+| Команда / граница | Raw exit | Наблюдение |
+|---|---:|---|
+| Оба original ownership controls | 0 each | Те же early/late objects и actual after bytes; useful CLI result/next writer |
+| Две named new regression functions | 0 |5 passed, включая normal/body/cleanup cases |
+| Оба affected adapter integration modules | 0 |36 passed/0 skips, existing privacy/partial-startup/close branches сохранены |
+| `uv run --locked --no-sync pytest tests/ --ignore=tests/downloads -m "not e2e" -q -rs` | 0 |275 passed,7 e2e deselected,0 skips; все прежние270 IDs +5 новых |
+| `uv run --locked --no-sync ruff check --select E,F,I <exact24 cumulative Python paths>` | 0 |Полный непустой changed-path E/F/I gate |
+| `uv run --locked --no-sync mypy src/ --ignore-missing-imports` | **1** |34 inherited findings/15 files/68 checked, exact file/line/message/code/multiplicity new0/removed0; не type PASS |
+| Четыре отдельные module smokes CLI/MCP/stdio/GUI | 0 each |Help5/discovery10/actual parity/offscreen construct/events/close, не замена useful checks |
+| Metadata/source/assertion/fixture/receipt reconciliation | 0 |Один successor и все шесть original rows, не дополнительное runtime coverage |
+
+5/36/275 и прежние2/54/270 пересекаются, не складываются. Прежние независимые
+useful CLI/MCP/HTTP/Qt физические readbacks применимо reused после byte/fixture/
+assertion binding, не выданы за новые controls. Fresh36/275 квалифицируют изменённые
+contexts/new assertions. Принятые S1–S4 не исследовались и не принимались заново.
+
+### Вся исходная шестистрочная матрица
+
+| Original row | Текущее основание / disposition |
+|---|---|
+| 1 Native CLI | Реальный module/parser/bootstrap/store: useful query/description/transcript/paths, exact channels/exits/usage/wrappers, readonly без writer/recovery/write, absent/corrupt preservation, standalone cancel OWNER_REQUIRED до пустого owner — ACCEPTED |
+| 2 Owned/borrowed add | Flushed acceptance до release, process held до terminal/save, done/fail/cancel/persistence native0/1/1/1, физические результаты/reopen/next writer; Windows no-delete-share handle реально отказывает replace и закрывается. Borrowed acceptance не wait/close runtime; R1 caller handlers сохранены — ACCEPTED |
+| 3 MCP stdio/shared owner | Actual SDK protocol child/ten tools/useful calls/missing, matching-token keep-files/reopen/native0; owned EOF cancel/save/native0. In-process add/cancel одного runtime, structured partial с реальными moved bytes/retained history — ACCEPTED |
+| 4 Managed HTTP | Actual OS listener/SDK effect/read, disconnect не Job cancel, intent nonterminal до release, stop/join/repeated close/port reuse/next job, foreign bind/borrowed runtime preservation — ACCEPTED |
+| 5 Existing GUI | Подписки/restoration до раннего HTTP, real Qt actions/signals/cards/dedup/cancel/filter, шесть actual modal No/Yes/stale × modes/token/physical recoverable moves, detached settings Cancel/Save/theme; no redesign — ACCEPTED в offline границе |
+| 6 Startup/close | Actual resource-factory/bind/window/log-open partial failures, truthful incomplete cleanup/resource-close recovery, owned worker/listener/lease/handler release и next operation; оба R1 callers/пять regression cases теперь проходят — ACCEPTED |
+
+Новые contexts не создают параллельный logging framework: только локальный acquired
+список handlers; formatter/levels/flush/close/remove применяются к owned objects,
+previous handlers возвращаются без стирания late caller registrations. Произвольные
+иные concurrent logger configurations этой bounded приёмкой не аттестованы.
+
+Fresh changed-chain diagnostics прошли actual emitter/formatter/handler/flush/readback:
+непустые main/error/stderr и safe CLI error, полезные id/code/count, diagnostic
+stdout0. Synthetic URL/proxy/title/path/raw-error markers отсутствуют. Explicit
+useful title/description/path results не считаются diagnostic leak. No blanket
+legacy/native Qt privacy claim.
+
+**Пределы:** native Trash move/restore, live YouTube/network/codec quality, Linux
+runtime/remote CI, packaging/EXE/manual visual и whole legacy privacy — NOT_RUN.
+System Trash заменён только fixture-owned recoverable moves; capability не
+превращается в native qualification. Пользовательские profiles/media/logs/bin и
+credentials не читались. Пакеты/software не устанавливались/не скачивались;
+чужие процессы/порты не закрывались. Собственные controlled backends в finally
+отпущены, worker/client/listener/handler/lease outcomes и native exits проверены;
+watchdog emergency cleanup не понадобился.
+
+Документационное завершение отражает именно эту приёмку: actual CLI режимы/выходы,
+canonical MCP factory, token/GUI/settings/lifetime/log ownership, known limits.
+24 принятых Python bytes не меняются при docs finish; source/tests не исправляются
+Reviewer-ом. PLAN и нормативные semantics CONTRACT не ослаблены, CI workflow
+alignment оставлен S6. Technical acceptance, selective commit, literal remote ref
+readback и exact-head CI остаются разными фактами; отсутствие jobs не CI PASS.
+S6 начинается только следующим отдельным назначением после завершения S5.

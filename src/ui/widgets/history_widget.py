@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, Callable
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
@@ -24,6 +25,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from ...application.command_api import CommandError
 from ...application.history_semantics import (
     history_entry_matches_query,
     resolve_history_entry_folder,
@@ -44,11 +46,14 @@ class HistoryItemWidget(QFrame):
     """
 
     open_folder_requested = Signal(Path)
-    delete_requested = Signal(int, bool)  # (entry_id, delete_files_from_disk)
+    delete_requested = Signal(int, bool, str)  # entry_id, mode, matching pre-modal token
+    delete_failed = Signal(int, object)
 
-    def __init__(self, entry: HistoryEntry, parent: QWidget | None = None) -> None:
+    def __init__(self, entry: HistoryEntry, parent: QWidget | None = None,
+                 *, prepare_delete: Callable[..., Any] | None = None) -> None:
         super().__init__(parent)
         self._entry = entry
+        self._prepare_delete = prepare_delete
         self.setObjectName("card")
         self.setFrameShape(QFrame.Shape.StyledPanel)
         self._init_ui()
@@ -159,7 +164,17 @@ class HistoryItemWidget(QFrame):
         return resolve_history_entry_folder(self._entry)
 
     def _on_delete_clicked(self) -> None:
-        """Показывает диалог подтверждения удаления."""
+        """Prepare BOTH modes before the unchanged modal, never after Yes."""
+        if self._prepare_delete is None:
+            self.delete_failed.emit(self._entry.id,
+                CommandError("An application owner is required", code="OWNER_REQUIRED"))
+            return
+        plans = {}
+        for mode in (False, True):
+            try:
+                plans[mode] = self._prepare_delete(self._entry.id, delete_files=mode)
+            except Exception as error:
+                plans[mode] = error
         msg = QMessageBox(self)
         msg.setWindowTitle(self.tr("Удалить запись"))
         title_text = resolve_history_entry_title(self._entry)
@@ -172,7 +187,15 @@ class HistoryItemWidget(QFrame):
         msg.setCheckBox(cb)
 
         if msg.exec() == QMessageBox.StandardButton.Yes:
-            self.delete_requested.emit(self._entry.id, cb.isChecked())
+            mode = cb.isChecked()
+            selected = plans[mode]
+            if isinstance(selected, BaseException):
+                self.delete_failed.emit(self._entry.id, selected)
+            elif not selected.plan_token:
+                self.delete_failed.emit(self._entry.id,
+                    CommandError("A deletion preview is required", code="CONFIRMATION_REQUIRED"))
+            else:
+                self.delete_requested.emit(self._entry.id, mode, selected.plan_token)
 
     def _status_icon(self):
         if self._entry.status == DownloadStatus.DONE:
@@ -204,12 +227,19 @@ class HistoryWidget(QWidget):
     """
 
     open_folder_requested = Signal(Path)
-    delete_requested = Signal(int, bool)  # (entry_id, delete_files_from_disk)
+    delete_requested = Signal(int, bool, str)
+    delete_failed = Signal(int, object)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._items: list[HistoryItemWidget] = []
+        self._prepare_delete: Callable[..., Any] | None = None
         self._init_ui()
+
+    def set_delete_preparer(self, callback: Callable[..., Any]) -> None:
+        self._prepare_delete = callback
+        for item in self._items:
+            item._prepare_delete = callback
 
     def _init_ui(self) -> None:
         layout = QVBoxLayout(self)
@@ -258,9 +288,10 @@ class HistoryWidget(QWidget):
         self._items.clear()
 
         for entry in entries:
-            widget = HistoryItemWidget(entry)
+            widget = HistoryItemWidget(entry, prepare_delete=self._prepare_delete)
             widget.open_folder_requested.connect(self.open_folder_requested)
             widget.delete_requested.connect(self.delete_requested)
+            widget.delete_failed.connect(self.delete_failed)
             self._items.append(widget)
             self._container_layout.insertWidget(self._container_layout.count() - 1, widget)
 

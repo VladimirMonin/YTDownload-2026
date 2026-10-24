@@ -337,7 +337,10 @@ def test_cli_history_delete_confirm_json(
         assert exit_code == 1 and captured.out == ""
         assert captured.err.strip()
         payload = json.loads(captured.err)
-        assert payload == {"error": failures[0].message, "hint": failures[0].hint}
+        assert payload == {
+            "error": failures[0].message, "hint": failures[0].hint,
+            "code": "CONFIRMATION_REQUIRED",
+        }
         assert not {"deleted", "files_removed"} & payload.keys()
         for sensitive in ("https://youtu.be/delete-me", "Delete me", str(tmp_path), media.name):
             assert sensitive not in captured.err

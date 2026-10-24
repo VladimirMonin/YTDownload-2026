@@ -1,18 +1,18 @@
-# 04 — MCP and GUI
+# 04 — CLI, MCP and GUI
 
-## Common checks
+S1–S5 are independently accepted within the recorded offline boundaries, including
+S5-R1 (preserve caller-owned logging handlers). Final qualification/CI alignment
+remains S6. [Verification](../command-first/VERIFICATION.md) owns current facts;
+[CONTRACT](../command-first/CONTRACT.md) owns semantics. No GUI redesign, live
+YouTube permission, native Trash restore or platform/package certification is implied.
 
-Use the existing environment from the project root, with pre-process isolation per
-[testing](../../.github/instructions/testing.instructions.md). The checked-in smokes
-allocate a narrower owned subtree before application/Qt/MCP imports; an optional
-`YTDL_SMOKE_ROOT` points to an existing owned parent. They retain synthetic files,
-restore env, close their handlers and join their own legacy coordinator executor.
-They explicitly override YTDL_DATA_DIR into that subtree as well as APPDATA/home;
-an inherited profile must not be opened/recovered. R1 checks real child success,
-unchanged competing history/artifacts/no-lock and present/absent × normal/failure
-restoration. The transitional private join notifies the runtime owner. Core S3
-cooperative cancellation/outcome schedules are accepted separately; this discovery
-smoke is not active-job/standalone/GUI adapter-lifetime acceptance (still S5).
+## Existing environment and four smokes
+
+From the project root, establish owned storage/home/temp/cache/log/output roots
+**before** collection/import per [testing](../../.github/instructions/testing.instructions.md).
+The scripts allocate a narrower owned subtree, including winning YTDL_DATA_DIR;
+YTDL_SMOKE_ROOT may name an owned parent. They preserve synthetic files, restore
+environment and join/close only their resources. A smoke is not a useful operation.
 
 ```bash
 uv run --locked --no-sync python -m scripts.smoke_cli_help
@@ -21,27 +21,52 @@ uv run --locked --no-sync python -m scripts.smoke_mcp_stdio
 uv run --locked --no-sync python -m scripts.smoke_gui
 ```
 
-`smoke_cli_help.py` covers the unified `src.interfaces.cli` command tree and
-help/examples. `smoke_mcp.py` and `smoke_mcp_stdio.py` cover MCP discovery
-parity. None of these replace real add/cancel/download validation.
+Help covers five parser/help cases. MCP smoke registers/discovers ten tools without
+binding HTTP. Stdio smoke runs a real SDK client/current-interpreter child with
+`-m scripts.smoke_mcp_stdio --serve`, complete isolation, keep_alive=False and
+bounded discovery/transport cleanup; its injected services are finally joined.
+It is discovery parity, not standalone tool-effect or active-job qualification.
+GUI smoke creates/shows/processes/closes a real offscreen window; it is not a
+visual/manual workflow or the desktop HTTP lifetime test. Qt offscreen is selected
+by the script; never leave a long-running app/server behind as a smoke.
 
-## GUI smoke on Linux/headless
+## One owner, distinct process modes
 
-Use Qt offscreen for non-interactive smoke checks. The checked-in script sets this automatically:
+`main.initialize_app()` delegates to create_runtime and preserves service keys;
+application_api/command_api alias the same facade. Separate processes do not share
+a live queue. One canonical data root has one writable lease; a second writer
+gets OWNER_BUSY. `--data-dir` selects this process's profile, not attach to GUI.
+Readonly history queries/preview read last-saved snapshots without lease,
+executor, recovery or writes, including an absent profile. Corrupt JSON is not
+silently treated as empty.
 
 ```bash
-QT_QPA_PLATFORM=offscreen uv run --locked --no-sync python -m scripts.smoke_gui
+uv run --locked --no-sync python -m src.interfaces.cli --help
+uv run --locked --no-sync python -m src.interfaces.cli --json --data-dir <owned-data-root> history list
+uv run --locked --no-sync python -m src.interfaces.cli server http --host 127.0.0.1 --port 8765
+uv run --locked --no-sync python -m src.interfaces.cli server stdio
 ```
 
-A useful smoke creates `QApplication`, calls `initialize_app()`, applies the theme, creates `MainWindow`, shows it, processes events, then closes it.
+Standalone queue add flushes one acceptance result before waiting for actual
+terminal/persistence. Exit0 means done+persisted; failed/cancelled/unsaved means
+exit1 and a safe stderr error, never a second stdout JSON. Usage remains exit2.
+Borrowed `cli.main(..., services=...)` returns acceptance without waiting or
+closing the caller runtime. Standalone queue cancel returns OWNER_REQUIRED before
+creating an empty owner/profile. Cancellation intent is not terminal quiescence.
 
-Do not claim full GUI verification from this smoke alone. It only proves initialization and basic event-loop startup, not full interactive GUI behavior.
+Canonical stdio uses the command above. Compatibility wrapper:
+`uv run --locked --no-sync python mcp_stdio_server.py`. Legacy HTTP module:
+`uv run --locked --no-sync python -m src.infrastructure.mcp.server --host 127.0.0.1 --port 8765`.
+The earlier spelling `uv run python -m src.interfaces.cli server stdio` refers to
+the same entry, not an existing-environment install/sync recipe.
 
-## MCP smoke
+## Canonical MCP factory and ten tools
 
-The offline smoke initializes real services, passes them to `create_mcp_server`,
-checks `list_tools()` with a timeout, then joins its coordinator in `finally`,
-including factory/discovery failures. It does not bind HTTP or invoke download tools.
+`src.infrastructure.mcp.server.create_mcp_server` registers one existing API;
+CLI bootstrap delegates/reexports it. It never initializes another application.
+Contradictory facade aliases refuse. The manifest in
+`src/infrastructure/mcp/manifest.py` is the only tool-name/count source;
+`scripts/mcp_expected_tools.py` and doc regressions consume it.
 
 Expected tools currently include 10 user-facing tools:
 
@@ -56,92 +81,68 @@ Expected tools currently include 10 user-facing tools:
 - `cancel_download`
 - `delete_download`
 
-Canonical source of truth for these names/counts lives in
-`src/infrastructure/mcp/manifest.py`; `scripts/mcp_expected_tools.py` imports
-that manifest for smoke checks, and regression tests verify this markdown list
-matches the manifest too.
+Actual offline SDK stdio checks go beyond discovery: useful get/list/description,
+missing-id error, token preview/refusal/keep-files apply, durable reopen and native
+child exit. In-process tools prove genuine shared-runtime add/cancel and structured
+partial deletion. Active owned stdio EOF triggers cooperative shutdown and terminal
+save; HTTP request/client disconnect does not cancel accepted Jobs.
 
-This smoke proves tool-registration parity for the shared `create_mcp_server(...)` path. It does not, by itself, prove a full end-to-end stdio session.
+## GUI and managed HTTP lifetime
 
-## Stdio MCP entry point
+MainWindow and its API-backed managers borrow the supplied runtime. The constructor
+attaches EventBus→Qt bridges and restores list_tasks before embedded HTTP admission;
+IDs deduplicate existing cards. History queries/delete/settings/theme use the API,
+not repository fallback or mutations of a borrowed settings object. Existing
+controls/dialog/layout/theme remain unchanged; filter state survives refresh.
 
-Hermes native MCP can run the project over stdio via:
+HTTPServerHandle owns only its actual socket, uvicorn.Server and non-daemon thread.
+Use close/join and check the result; repeated close is safe, a borrowed runtime
+remains usable. Foreign bind failures do not stop foreign listeners. Desktop
+entry owns its runtime: close admission, stop/join transport, detach window bridges,
+then final cooperative runtime join/lease release. Partial startup/open/close
+failure cannot be reported as clean success. Blocking external work may delay
+shutdown; no hard stop deadline or thread kill is promised.
+
+Logging contexts own only acquired handlers, not early/late caller objects.
+Partial file-open and cleanup failure, actual next writes and usable next owner
+are required evidence; see [logging](../../.github/instructions/logging.instructions.md).
+
+## Token-bound deletion in all adapters
+
+Preview has no effect. CLI/MCP apply needs explicit consent, the same ID/mode and
+the returned token. Boolean/token does not authenticate a person. Example commands
+are a manual workflow, never permission for an agent to alter a user's files:
 
 ```bash
-uv run --locked --no-sync python -m src.interfaces.cli server stdio
+uv run --locked --no-sync python -m src.interfaces.cli --json history delete 42 --keep-files --preview
+uv run --locked --no-sync python -m src.interfaces.cli --json history delete 42 --keep-files --confirm --plan-token TOKEN_FROM_PREVIEW
 ```
 
-Compatibility wrapper: `uv run --locked --no-sync python mcp_stdio_server.py`
-delegates into the same module path. The earlier spelling
-`uv run python -m src.interfaces.cli server stdio` names that same canonical path;
-for existing-environment checks use the locked/no-sync command above, not an
-implicit environment sync.
+MCP first calls delete_download(id, delete_files, confirm=False), then only after
+consent repeats the ID/mode with confirm=True and plan_token. GUI prepares both
+existing checkbox modes before opening the existing modal; No preserves bytes,
+Yes forwards the selected plan and changed state returns STALE_PLAN. Never
+manufacture a fresh token inside apply or fall back to repository.delete.
 
-The stdio command initializes the same services as the HTTP server and calls
-`mcp.run(transport="stdio", show_banner=False)`.
+Only recorded media/sidecars may move to recoverable Trash; directories/unlisted
+files remain. Keep-files removes only history and still requires a matching plan.
+Legacy folder-only attribution, unsafe/shared/linked/live targets safely refuse.
+Partial/unknown moves or history-save failure retain structured counts/state and
+recovery=repreview; obtain fresh consent rather than retrying an old token.
+Installed lazy QtCore capability and synthetic recoverable moves do **not** prove
+native Trash move/restore. Never enumerate a user's bin or use permanent fallback.
 
-Because both transports reuse `create_mcp_server(...)`, keep user-facing tool docs and expected tool counts aligned with `scripts/smoke_mcp.py` and `src/infrastructure/mcp/server.py`.
+## Evidence limits and network permission
 
-For an offline parity check against the real stdio boundary, run:
+Connected checks use real parser/API/coordinator/repositories/files/SDK/Qt, replacing
+only external download/Trash edges with controlled owned fixtures. They verify
+native CLI outcomes, actual stdio, loopback HTTP effects/disconnect/quiescence/
+port reuse, real Qt actions/modal/settings and partial startup/cleanup failures.
+Nonempty safe file/stderr sinks and clean result/protocol stdout are separate
+from handler ownership; neither certifies whole legacy/native Qt diagnostics.
 
-```bash
-uv run --locked --no-sync python -m scripts.smoke_mcp_stdio
-```
-
-The real MCP client starts the current interpreter with
-`-m scripts.smoke_mcp_stdio --serve`, explicitly passing the isolated environment.
-That child creates its own services and calls the real CLI
-`main(["server", "stdio"], services=...)`, joining the legacy coordinator in finally.
-Discovery is bounded (30 s; separate transport cleanup limit 10 s), keep-alive is
-disabled, and an owned cleanup receipt is checked after close. Independent S1
-also observed actual child exits with an outer watchdog, not just that flag.
-Report this as `stdio MCP smoke / parity`, not tool-effect E2E or proof of the
-unchanged standalone CLI's lifetime. Real synthetic tool effects and complete
-standalone stdio lifetime/finally wiring remain S5; [current evidence](../command-first/VERIFICATION.md).
-
-## Current application ownership boundary
-
-`main.initialize_app()` is a `create_runtime` wrapper with the same facade aliases
-and an additional owning `runtime`. Separate processes on one writable canonical
-root now refuse with OWNER_BUSY, rather than sharing an in-memory queue. A direct
-Python readonly/task/wait APIs and S3 runtime-owned cancellation are available;
-new real-backend artifacts use output_root/download-<task_id>/… and actual stored
-paths, not title-based ownership. Current CLI queries/standalone server cleanup
-have not yet been migrated to the complete S5 contract. Do not describe shared
-library/services as external attach, or expose the local HTTP endpoint to an
-untrusted network based on this offline smoke evidence.
-
-## S4 deletion versus S5 adapter integration
-
-The Application API independently accepts token-bound preview/apply, exact known
-file moves and truthful partial/persistence results. A preview has no effect;
-apply needs the same ID/mode and `expected_plan=preview.plan_token`. Neither a
-boolean nor the digest authenticates a person. Missing token safely refuses even
-keep-files. No directory cleanup or permanent-delete fallback is allowed.
-
-Current CLI --confirm, MCP confirm and the existing GUI manager call do not yet
-pass this token. The two changed compatibility cases exercise their real shared
-API refusal and preservation, not successful S5 confirmation. CLI return1/safe
-stderr in an injected in-process call is not standalone native exit/lifetime proof.
-Do not add a token bypass, fake success or repository fallback to restore the old
-unsafe expectation. Existing GUI dialog/token callback wiring and removal of
-legacy bypass are S5; layout and controls remain unchanged.
-
-Default lazy QtCore construction/installed capability, native link/junction guards
-and synthetic recoverable OS moves are distinct evidence. Actual native Trash
-move/restore is NOT_RUN, not implied by capability=True. Never enumerate the user's
-bin or use permanent deletion as a diagnostic shortcut. See [verification](../command-first/VERIFICATION.md).
-
-## Real validation gate
-
-Keep these separate from offline smoke:
-
-- real `add_download` / `queue add` against a live YouTube URL;
-- real `cancel_download` / `queue cancel --confirm` on an active task;
-- sidecar artifact propagation (`.description`, subtitles, thumbnail,
-  `.info.json`) on a real download;
-- real stdio tool invocation through the unified path with live side effects.
-
-## Real MCP server
-
-Starting the HTTP server binds to a port. Check port availability before long-running server tests. Do not leave background servers running unless needed.
+Live URL/download/sidecar/codec validation needs explicit permission and a concrete
+URL under [download testing](03-download-testing.md). Linux runtime/remote CI,
+packaging/EXE/manual visual and native Trash restore remain NOT_RUN. HTTP defaults
+to 127.0.0.1; single-user unauthenticated local operation is not a security claim
+for an untrusted network. Never leave owned servers/threads after a check.

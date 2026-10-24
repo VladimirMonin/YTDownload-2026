@@ -10,6 +10,7 @@ import logging
 from typing import Any
 
 from src.application.dto import serialize_for_transport
+from src.infrastructure.mcp.tools._utils import error_payload
 
 logger = logging.getLogger(__name__)
 
@@ -71,8 +72,9 @@ def create_list_downloads_tool(mcp: Any, api: Any) -> None:
         """
         try:
             result = serialize_for_transport(api.list_downloads(status=status, limit=limit))
-            logger.info("mcp.list_downloads count=%d status_filter=%s", len(result), status)
+            logger.info("mcp.list_downloads count=%d", len(result))
             return result
-        except Exception as exc:
-            logger.error("mcp.list_downloads.error", exc_info=True)
-            return {"error": str(exc), "hint": "Check app logs for details"}
+        except Exception as error:
+            payload = error_payload(error)
+            logger.error("mcp.list_downloads.failed reason_code=%s", payload["code"])
+            return payload

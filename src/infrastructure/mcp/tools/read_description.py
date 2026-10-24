@@ -10,6 +10,7 @@ import logging
 from typing import Any
 
 from src.application.dto import serialize_for_transport
+from src.infrastructure.mcp.tools._utils import error_payload
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +74,7 @@ def create_read_description_tool(mcp: Any, api: Any) -> None:
             )
             return result
 
-        except Exception as exc:
-            logger.error("mcp.read_description.error id=%d", id, exc_info=True)
-            return {"error": str(exc), "hint": "Check app logs for details"}
+        except Exception as error:
+            payload = error_payload(error)
+            logger.error("mcp.read_description.failed reason_code=%s", payload["code"])
+            return payload

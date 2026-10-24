@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from src.application.command_api import CommandError
+from src.infrastructure.mcp.tools._utils import error_payload
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +40,8 @@ def create_cancel_download_tool(mcp: Any, command_api: Any) -> None:
 
         ⚠️ TWO-PHASE CONFIRMATION REQUIRED:
         Phase 1: Call with confirm=False (default) → shows preview, NO side effects.
-        Phase 2: User confirms → call with confirm=True → cancels the download.
+        Phase 2: User confirms → confirm=True records cooperative cancellation intent.
+        Terminal cancellation follows actual worker quiescence, not the response.
 
         NEVER call with confirm=True without explicit user approval!
 
@@ -55,7 +56,8 @@ def create_cancel_download_tool(mcp: Any, command_api: Any) -> None:
         - cancel_download(id=5, confirm=True) → actually cancels
 
         NOTE: Can only cancel "queued" or "downloading" tasks.
-        Already completed/failed/cancelled tasks cannot be cancelled.
+        Done/failed tasks conflict; already cancelled is idempotent. Repeating an
+        outstanding intent does not signal a second effect.
 
         Args:
             id: Numeric download ID to cancel.
@@ -83,8 +85,7 @@ def create_cancel_download_tool(mcp: Any, command_api: Any) -> None:
             result = command_api.cancel_download(id)
             logger.info("mcp.cancel_download id=%d", id)
             return {"id": result.id, "status": result.status}
-        except CommandError as exc:
-            return {"error": exc.message, "hint": exc.hint}
-        except Exception as exc:
-            logger.error("mcp.cancel_download.error id=%d", id, exc_info=True)
-            return {"error": str(exc), "hint": "Check app logs for details"}
+        except Exception as error:
+            payload = error_payload(error)
+            logger.error("mcp.cancel_download.failed reason_code=%s", payload["code"])
+            return payload

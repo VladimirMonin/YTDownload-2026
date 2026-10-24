@@ -14,6 +14,9 @@ from __future__ import annotations
 
 from typing import Any
 
+from src.application.command_api import CommandError
+from src.application.dto import serialize_for_transport
+
 
 def _ev(value: Any) -> Any:
     """Normalize enum-like values while tolerating plain scalars."""
@@ -71,4 +74,29 @@ def entry_to_dict_full(entry: Any) -> dict[str, Any]:
     return payload
 
 
-__all__ = ["entry_to_dict_full", "entry_to_dict_short"]
+def error_payload(error: BaseException) -> dict[str, Any]:
+    """Shared thin-adapter error shape; unexpected exceptions never expose their text."""
+    known = {
+        "INVALID_ARGUMENT", "NOT_FOUND", "OWNER_REQUIRED", "OWNER_BUSY", "RUNTIME_CLOSING",
+        "ALREADY_TERMINAL", "ACTIVE_DOWNLOAD", "CONFIRMATION_REQUIRED", "STALE_PLAN",
+        "UNSAFE_FILE_SCOPE", "STORAGE_CORRUPT", "PERSISTENCE_FAILED", "EXECUTION_UNAVAILABLE",
+        "DOWNLOAD_FAILED", "PARTIAL_DOWNLOAD", "INTERRUPTED", "TRASH_UNAVAILABLE",
+        "PARTIAL_DELETE", "ARTIFACT_READ_FAILED", "INTERNAL_ERROR",
+    }
+    candidate = getattr(error, "code", None)
+    code = candidate if isinstance(candidate, str) and candidate in known else "INTERNAL_ERROR"
+    payload: dict[str, Any] = {
+        "error": "Operation could not be completed",
+        "hint": "Inspect the operation state before retrying",
+        "code": code,
+    }
+    if isinstance(error, CommandError):
+        payload["error"], payload["hint"] = error.message, error.hint
+        if error.result is not None:
+            payload["result"] = serialize_for_transport(error.result)
+        if isinstance(error.task_id, int) and not isinstance(error.task_id, bool):
+            payload["task_id"] = error.task_id
+    return payload
+
+
+__all__ = ["entry_to_dict_full", "entry_to_dict_short", "error_payload"]

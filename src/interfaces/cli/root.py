@@ -3,15 +3,18 @@
 from __future__ import annotations
 
 import argparse
-import io
 import json
 import logging
+import os
 import sys
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
 from dataclasses import asdict, is_dataclass
+from pathlib import Path
 from typing import Any, Callable
 
 from src.application.command_api import CommandError
+from src.infrastructure.mcp.tools._utils import error_payload
 
 Handler = Callable[[argparse.Namespace], int]
 logger = logging.getLogger(__name__)
@@ -84,12 +87,129 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Force JSON output for command results where applicable.",
     )
+    parser.add_argument(
+        "--data-dir", type=Path, help="Use a separate explicit data root, not attach."
+    )
     subparsers = parser.add_subparsers(dest="root_command", required=True)
 
     _add_queue_commands(subparsers)
     _add_history_commands(subparsers)
     _add_server_commands(subparsers)
     return parser
+
+
+def _readonly(args: argparse.Namespace) -> bool:
+    return args.root_command == "history" and (
+        args.history_command != "delete"
+        or not getattr(args, "confirm", False)
+        or getattr(args, "preview", False)
+    )
+
+
+@contextmanager
+def _diagnostics(args: argparse.Namespace) -> Iterator[None]:
+    """Own only this invocation's handlers; never close the caller's logging resources."""
+    from logging.handlers import RotatingFileHandler
+
+    root = logging.getLogger()
+    previous, level = root.handlers[:], root.level
+    owned: list[logging.Handler] = []
+    names = ("yt_dlp", "fastmcp", "mcp", "uvicorn.access")
+    levels = {name: logging.getLogger(name).level for name in names}
+    root.handlers = []
+    try:
+        log_dir = os.environ.get("YTDL_LOG_DIR") or None
+        standalone_cancel = args.root_command == "queue" and args.queue_command == "cancel"
+        if (
+            log_dir is None
+            and not _readonly(args)
+            and not standalone_cancel
+            and not args.injected_services
+        ):
+            selected = args.data_dir or os.environ.get("YTDL_DATA_DIR") or None
+            data_root = (
+                Path(selected)
+                if selected is not None
+                else (Path(os.environ.get("APPDATA") or Path.home()) / "YTDownloader")
+            )
+            log_dir = str(data_root.expanduser().resolve() / "logs")
+        if log_dir is not None:
+            directory = Path(log_dir)
+            directory.mkdir(parents=True, exist_ok=True)
+            # Publish ownership immediately, even if the next handler cannot open.
+            owned.append(logging.StreamHandler(sys.stderr))
+            root.addHandler(owned[-1])
+            owned.append(
+                RotatingFileHandler(
+                    directory / "app.log",
+                    maxBytes=10 * 1024 * 1024,
+                    backupCount=5,
+                    encoding="utf-8",
+                )
+            )
+            root.addHandler(owned[-1])
+            error_handler = RotatingFileHandler(
+                directory / "app.error.log",
+                maxBytes=5 * 1024 * 1024,
+                backupCount=3,
+                encoding="utf-8",
+            )
+            owned.append(error_handler)
+            root.addHandler(error_handler)
+            error_handler.setLevel(logging.ERROR)
+            formatter = logging.Formatter(
+                "%(asctime)s %(levelname)-8s %(name)s  %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+            )
+            for handler in owned:
+                handler.setFormatter(formatter)
+            root.setLevel(
+                getattr(logging, os.environ.get("YTDL_LOG_LEVEL", "INFO").upper(), logging.INFO)
+            )
+        else:
+            # A genuine read-only query must not create a profile merely to log it.
+            handler = logging.StreamHandler(sys.stderr)
+            owned.append(handler)
+            handler.setFormatter(logging.Formatter("%(levelname)s %(name)s %(message)s"))
+            root.addHandler(handler)
+            root.setLevel(logging.INFO)
+        for name in names:
+            logging.getLogger(name).setLevel(logging.WARNING)
+        if args.json or getattr(args, "format", None) == "json":
+            # JSON error stderr remains one document; diagnostics go to owned files, not a buffer.
+            for handler in owned:
+                if not isinstance(handler, logging.FileHandler):
+                    handler.setLevel(logging.CRITICAL + 1)
+        yield
+    finally:
+        cleanup_failed = False
+        for handler in owned:
+            root.removeHandler(handler)
+            try:
+                handler.flush()
+            except Exception:
+                cleanup_failed = True
+            try:
+                handler.close()
+            except Exception:
+                cleanup_failed = True
+        for handler in previous:
+            root.addHandler(handler)
+        root.setLevel(level)
+        for name, old_level in levels.items():
+            logging.getLogger(name).setLevel(old_level)
+        if cleanup_failed:
+            raise CommandError("Diagnostic cleanup was incomplete", code="INTERNAL_ERROR")
+
+
+def _emit_failure(args: argparse.Namespace, error: BaseException, shutdown: Any = None) -> None:
+    payload = error_payload(error)
+    if shutdown is not None:
+        payload["shutdown"] = _normalize_payload(shutdown)
+    logger.error("cli.command.failed reason_code=%s", payload["code"])
+    if args.json or getattr(args, "format", None) == "json":
+        print(json.dumps(payload, ensure_ascii=False), file=sys.stderr, flush=True)
+    else:
+        print(_format_error(payload), file=sys.stderr, flush=True)
 
 
 def main(
@@ -99,48 +219,63 @@ def main(
 ) -> int:
     parser = build_parser()
     args = parser.parse_args(list(argv) if argv is not None else None)
-    setattr(args, "injected_services", services or {})
-
-    from src.core.logging_setup import setup_logging
-
-    log_stream = io.StringIO() if args.json else sys.stderr
-    setup_logging(stream=log_stream)
-    handler = getattr(args, "handler", None)
-    if handler is None:
-        parser.print_help(sys.stderr)
-        return EXIT_USAGE_ERROR
-
+    args.injected_services = services or {}
+    args.owned_runtime = None
+    args.accepted_task_id = None
     try:
-        return int(handler(args))
-    except CommandError as exc:
-        if getattr(args, "json", False):
-            print(
-                json.dumps({"error": exc.message, "hint": exc.hint}, ensure_ascii=False),
-                file=sys.stderr,
-            )
+        return _run_invocation(args)
+    except Exception as error:
+        # Includes logging setup/teardown failure; never expose raw OS error/traceback.
+        payload = error_payload(error)
+        if args.json or getattr(args, "format", None) == "json":
+            print(json.dumps(payload, ensure_ascii=False), file=sys.stderr, flush=True)
         else:
-            print(f"Error: {exc.message}", file=sys.stderr)
-            if exc.hint:
-                print(f"Hint: {exc.hint}", file=sys.stderr)
+            print(_format_error(payload), file=sys.stderr, flush=True)
         return EXIT_RUNTIME_ERROR
-    except KeyboardInterrupt:
-        print("Interrupted", file=sys.stderr)
-        return EXIT_RUNTIME_ERROR
-    except Exception as exc:
-        logger.error("cli.command.failed", exc_info=True)
-        if getattr(args, "json", False):
-            error_payload: dict[str, Any] = {"error": str(exc)}
-            hint = getattr(exc, "hint", None)
-            if hint:
-                error_payload["hint"] = hint
-            print(json.dumps(error_payload, ensure_ascii=False), file=sys.stderr)
-        else:
-            hint = getattr(exc, "hint", None)
-            if hint:
-                print(f"Error: {exc}\nHint: {hint}", file=sys.stderr)
-            else:
-                print(f"Error: {exc}", file=sys.stderr)
-        return EXIT_RUNTIME_ERROR
+
+
+def _run_invocation(args: argparse.Namespace) -> int:
+    code = EXIT_RUNTIME_ERROR
+    failure: BaseException | None = None
+    shutdown: Any = None
+    with _diagnostics(args):
+        try:
+            if (
+                args.root_command == "queue"
+                and args.queue_command == "cancel"
+                and not args.injected_services
+            ):
+                raise CommandError("A live owner is required", code="OWNER_REQUIRED")
+            code = int(args.handler(args))
+        except KeyboardInterrupt:
+            code = EXIT_RUNTIME_ERROR
+            failure = CommandError("Interrupted", code="INTERRUPTED")
+            failure.task_id = args.accepted_task_id
+        except Exception as error:
+            code = EXIT_RUNTIME_ERROR
+            failure = error
+        finally:
+            runtime = args.owned_runtime
+            if runtime is not None:
+                shutdown = runtime.close(
+                    cancel=code != EXIT_OK or args.root_command == "server", wait=True
+                )
+                if not shutdown.closed or shutdown.error_codes:
+                    if failure is None:
+                        failure = CommandError(
+                            "Runtime shutdown was incomplete",
+                            code=(
+                                "PERSISTENCE_FAILED"
+                                if shutdown.persistence_error_ids
+                                else "INTERNAL_ERROR"
+                            ),
+                        )
+                else:
+                    shutdown = None
+            if failure is not None:
+                code = EXIT_RUNTIME_ERROR
+                _emit_failure(args, failure, shutdown)
+    return code
 
 
 def _add_queue_commands(subparsers: Any) -> None:
@@ -276,6 +411,7 @@ def _add_history_commands(subparsers: Any) -> None:
     delete_group.add_argument("--keep-files", dest="delete_files", action="store_false")
     delete_parser.add_argument("--preview", action="store_true")
     delete_parser.add_argument("--confirm", action="store_true")
+    delete_parser.add_argument("--plan-token", default=None)
     delete_parser.add_argument("--format", choices=["json", "text"], default="text")
     delete_parser.set_defaults(handler=_handle_history_delete)
 
@@ -318,7 +454,26 @@ def _handle_queue_add(args: argparse.Namespace) -> int:
         save_description=args.save_description,
         save_thumbnail=args.save_thumbnail,
     )
-    return _emit_payload(args, result)
+    args.accepted_task_id = result.task_id
+    code = _emit_payload(args, result)
+    if args.owned_runtime is not None:
+        terminal = command_api.wait_for_download(result.task_id)
+        if terminal.status != "done" or terminal.result_persisted is not True:
+            error = CommandError(
+                "Download did not finish successfully",
+                code=(
+                    terminal.error_code
+                    or ("INTERRUPTED" if terminal.status == "cancelled" else "DOWNLOAD_FAILED")
+                ),
+            )
+            error.task_id = result.task_id
+            error.result = {
+                "task_id": result.task_id,
+                "status": terminal.status,
+                "result_persisted": terminal.result_persisted,
+            }
+            raise error
+    return code
 
 
 def _handle_queue_cancel(args: argparse.Namespace) -> int:
@@ -381,7 +536,9 @@ def _handle_history_file_paths(args: argparse.Namespace) -> int:
 def _handle_history_delete(args: argparse.Namespace) -> int:
     command_api = _get_command_api(args)
     if args.confirm and not args.preview:
-        result = command_api.delete_download(args.id, delete_files=args.delete_files)
+        result = command_api.delete_download(
+            args.id, delete_files=args.delete_files, expected_plan=args.plan_token
+        )
         return _emit_payload(args, result)
 
     preview = command_api.prepare_delete_download(args.id, delete_files=args.delete_files)
@@ -394,7 +551,15 @@ def _run_server_http(args: argparse.Namespace) -> int:
     from src.interfaces.cli.bootstrap import run_http_server
 
     services = _ensure_services(args)
-    run_http_server(services, host=args.host, port=args.port)
+    runtime = getattr(args, "owned_runtime", None)
+    run_http_server(
+        services,
+        host=args.host,
+        port=args.port,
+        stop_admission=(lambda: runtime.close(cancel=True, wait=False))
+        if runtime is not None
+        else None,
+    )
     return EXIT_OK
 
 
@@ -402,17 +567,35 @@ def _run_server_stdio(args: argparse.Namespace) -> int:
     from src.interfaces.cli.bootstrap import run_stdio_server
 
     services = _ensure_services(args)
-    run_stdio_server(services)
+    runtime = getattr(args, "owned_runtime", None)
+    run_stdio_server(
+        services,
+        stop_admission=(lambda: runtime.close(cancel=True, wait=False))
+        if runtime is not None
+        else None,
+    )
     return EXIT_OK
 
 
 def _ensure_services(args: argparse.Namespace) -> dict[str, Any]:
     services = getattr(args, "injected_services", None)
+    if (
+        services
+        and services.get("application_api") is not None
+        and services.get("command_api") is not None
+    ):
+        if services["application_api"] is not services["command_api"]:
+            raise CommandError("Service aliases must share one owner", code="INVALID_ARGUMENT")
     if not services:
         from src.interfaces.cli.bootstrap import initialize_services
 
-        services = initialize_services()
-        setattr(args, "injected_services", services)
+        services = initialize_services(data_root=args.data_dir, read_only=_readonly(args))
+        args.owned_runtime = services.get("runtime")
+        args.injected_services = services
+    elif args.data_dir is not None:
+        runtime = services.get("runtime")
+        if runtime is None or Path(args.data_dir).expanduser().resolve() != runtime.data_root:
+            raise CommandError("Injected services determine the data root", code="INVALID_ARGUMENT")
     return services
 
 
@@ -431,9 +614,7 @@ def _get_command_api(args: argparse.Namespace) -> Any:
     services = _ensure_services(args)
     api = services.get("command_api") or services.get("application_api")
     if api is None:
-        from src.application.command_api import build_command_api
-
-        api = build_command_api(services)
+        api = _get_application_api(args)
         services["command_api"] = api
     return api
 
@@ -448,7 +629,7 @@ def _emit_payload(args: argparse.Namespace, payload: Any) -> int:
         return EXIT_RUNTIME_ERROR
 
     if getattr(args, "json", False) or getattr(args, "format", None) == "json":
-        print(json.dumps(normalized, ensure_ascii=False))
+        print(json.dumps(normalized, ensure_ascii=False), flush=True)
         return EXIT_OK
 
     output_format = getattr(args, "format", "text")

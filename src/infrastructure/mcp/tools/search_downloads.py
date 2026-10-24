@@ -14,6 +14,7 @@ import logging
 from typing import Any
 
 from src.application.dto import serialize_for_transport
+from src.infrastructure.mcp.tools._utils import error_payload
 
 logger = logging.getLogger(__name__)
 
@@ -68,9 +69,10 @@ def create_search_downloads_tool(mcp: Any, api: Any) -> None:
             result = serialize_for_transport(api.search_downloads(query, limit=limit))
             logger.info("mcp.search_downloads count=%d query_len=%d", len(result), len(query))
             return result
-        except Exception as exc:
-            logger.error("mcp.search_downloads.error", exc_info=True)
-            return {"error": str(exc), "hint": "Check app logs for details"}
+        except Exception as error:
+            payload = error_payload(error)
+            logger.error("mcp.search_downloads.failed reason_code=%s", payload["code"])
+            return payload
 
     @mcp.tool()
     def search_with_description(query: str, limit: int = 10) -> list[dict] | dict:
@@ -121,6 +123,7 @@ def create_search_downloads_tool(mcp: Any, api: Any) -> None:
                 len(query),
             )
             return result
-        except Exception as exc:
-            logger.error("mcp.search_with_description.error", exc_info=True)
-            return {"error": str(exc), "hint": "Check app logs for details"}
+        except Exception as error:
+            payload = error_payload(error)
+            logger.error("mcp.search_with_description.failed reason_code=%s", payload["code"])
+            return payload

@@ -13,6 +13,7 @@ import logging
 from typing import Any
 
 from src.application.dto import serialize_for_transport
+from src.infrastructure.mcp.tools._utils import error_payload
 
 logger = logging.getLogger(__name__)
 
@@ -107,14 +108,14 @@ def create_get_transcript_tool(mcp: Any, api: Any) -> None:
                 api.get_transcript(id, lang=lang, raw=raw, timestamps=timestamps)
             )
             logger.info(
-                "mcp.get_transcript id=%d lang=%s timestamps=%s text_len=%d",
+                "mcp.get_transcript id=%d timestamps=%s text_len=%d",
                 id,
-                result.get("lang_detected"),
                 timestamps,
                 len(result.get("transcript_text") or ""),
             )
             return result
 
-        except Exception as exc:
-            logger.error("mcp.get_transcript.error id=%d", id, exc_info=True)
-            return {"error": str(exc), "hint": "Check app logs for details"}
+        except Exception as error:
+            payload = error_payload(error)
+            logger.error("mcp.get_transcript.failed reason_code=%s", payload["code"])
+            return payload

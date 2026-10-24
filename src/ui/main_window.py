@@ -28,14 +28,13 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from ..application.api import ApplicationAPI
 from ..application.command_api import CommandError
-from ..application.download_coordinator import DownloadCoordinator
 from ..application.history_semantics import resolve_history_entry_folder
 from ..core.event_bus import EventBus
 from ..domain.models.app_settings import AppSettings
 from ..domain.models.download_task import DownloadTask
-from ..domain.protocols.history_repository import IHistoryRepository
-from ..domain.protocols.settings_repository import ISettingsRepository
+from ..infrastructure.mcp.tools._utils import error_payload
 from .managers import DownloadManager, HistoryManager
 from .utils.tabler_icons import TablerIcons, get_icon
 from .utils.theme import Theme, apply_theme, current_theme
@@ -61,31 +60,32 @@ class MainWindow(QMainWindow):
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
-        self._settings: AppSettings = services["settings"]
-        self._settings_repo: ISettingsRepository = services["settings_repo"]
-        self._history_repo: IHistoryRepository = services["history_repo"]
-        self._coordinator: DownloadCoordinator = services["coordinator"]
+        api = services.get("application_api") or services.get("command_api")
+        if api is None:
+            raise CommandError("An application owner is required", code="OWNER_REQUIRED")
+        self._api: ApplicationAPI = api
+        if services.get("command_api") is not None and services["command_api"] is not self._api:
+            raise CommandError("Service aliases must share one owner", code="INVALID_ARGUMENT")
+        self._settings: AppSettings = self._api.get_settings()
         self._event_bus: EventBus = services["event_bus"]
-        self._command_api = services.get("command_api") or services.get("application_api")
-
-        # Менеджеры
-        self._download_manager = DownloadManager(self._coordinator, self._event_bus)
-        self._history_manager = HistoryManager(
-            self._history_repo,
-            self._event_bus,
-            command_api=self._command_api,
-        )
-
-        # Карточки загрузок: task_id → DownloadItemWidget
         self._item_widgets: dict[int, DownloadItemWidget] = {}
-
-        self._init_ui()
-        self._connect_signals()
-        self._restore_geometry()
-        self._refresh_history()
-
-        apply_theme(Theme(self._settings.theme))
-        logger.info("ui.main_window.ready")
+        try:
+            self._download_manager = DownloadManager(self._api, self._event_bus)
+            self._history_manager = HistoryManager(self._api, self._event_bus)
+            self._init_ui()
+            self._connect_signals()
+            self._history_widget.set_delete_preparer(self._history_manager.prepare_delete)
+            self._restore_geometry()
+            self._refresh_history()
+            # Subscriptions first, then one detached initial task snapshot. Queue events
+            # racing restoration are deduplicated by task ID, never by folder/title.
+            for task in self._download_manager.list_tasks():
+                self._on_task_queued(task.id, task.url)
+            apply_theme(Theme(self._settings.theme))
+            logger.info("ui.main_window.ready")
+        except BaseException:
+            self.cleanup()
+            raise
 
     # ─────────────────────────────────────────────────────────────────
     # UI Shell
@@ -222,30 +222,47 @@ class MainWindow(QMainWindow):
         # История — убираем сломанный callback из фонового потока
         self._history_widget.open_folder_requested.connect(self._open_folder)
         self._history_widget.delete_requested.connect(self._on_history_delete)
+        self._history_widget.delete_failed.connect(
+            lambda _id, error: self._show_operation_error(error))
 
     # ─────────────────────────────────────────────────────────────────
     # Слоты (Main Thread)
     # ─────────────────────────────────────────────────────────────────
 
     def _on_add_url(self, url: str) -> None:
-        task_id = self._download_manager.add(
-            url=url,
-            quality=self._options.quality,
-            download_type=self._options.download_type,
-            subtitle_lang=self._options.subtitle_lang,
-            save_subtitles=self._options.save_subtitles,
-            save_description=self._options.save_description,
-            save_thumbnail=self._options.save_thumbnail,
-        )
-        logger.info("ui.add_url task_id=%d", task_id)
+        try:
+            task_id = self._download_manager.add(
+                url=url, quality=self._options.quality,
+                download_type=self._options.download_type,
+                subtitle_lang=self._options.subtitle_lang,
+                save_subtitles=self._options.save_subtitles,
+                save_description=self._options.save_description,
+                save_thumbnail=self._options.save_thumbnail,
+            )
+            logger.info("ui.add_url task_id=%d", task_id)
+        except Exception as error:
+            self._show_operation_error(error)
+
+    def _cancel_task(self, task_id: int) -> None:
+        try:
+            self._download_manager.cancel(task_id)
+        except Exception as error:
+            self._show_operation_error(error)
+
+    def _show_operation_error(self, error: BaseException) -> None:
+        payload = error_payload(error)
+        self._status_bar.showMessage(payload["error"], 8000)
+        logger.warning("ui.operation.failed reason_code=%s", payload["code"])
 
     def _on_task_queued(self, task_id: int, url: str) -> None:
-        task = self._coordinator.get_task(task_id)
+        task = self._download_manager.get_task(task_id)
         if task is None:
             task = DownloadTask(id=task_id, url=url)
-
+        if task_id in self._item_widgets:
+            self._item_widgets[task_id].update_task(task)
+            return
         item = DownloadItemWidget(task)
-        item.cancel_requested.connect(self._download_manager.cancel)
+        item.cancel_requested.connect(self._cancel_task)
         self._item_widgets[task_id] = item
         # Вставляем перед stretch
         self._queue_layout.insertWidget(self._queue_layout.count() - 1, item)
@@ -254,7 +271,7 @@ class MainWindow(QMainWindow):
         self._tabs.setCurrentIndex(0)
 
     def _on_task_started(self, task_id: int) -> None:
-        task = self._coordinator.get_task(task_id)
+        task = self._download_manager.get_task(task_id)
         if task and task_id in self._item_widgets:
             self._item_widgets[task_id].update_task(task)
         self._status_bar.showMessage(self.tr("Загрузка #%1…").replace("%1", str(task_id)))
@@ -264,13 +281,14 @@ class MainWindow(QMainWindow):
             self._item_widgets[task_id].update_progress(percent, speed, eta)
 
     def _on_task_done(self, task_id: int) -> None:
-        task = self._coordinator.get_task(task_id)
+        task = self._download_manager.get_task(task_id)
         if task and task_id in self._item_widgets:
             self._item_widgets[task_id].update_task(task)
         self._update_queue_info()
         self._refresh_history()  # <-- главный поток, безопасно
         # Показываем куда сохранено
-        entry = self._history_repo.get_by_id(task_id)
+        entry = next(
+            (entry for entry in self._history_manager.get_all() if entry.id == task_id), None)
         folder_path = resolve_history_entry_folder(entry) if entry else None
         folder = str(folder_path) if folder_path else str(self._settings.output_dir)
         self._status_bar.showMessage(
@@ -279,7 +297,7 @@ class MainWindow(QMainWindow):
         )
 
     def _on_task_failed(self, task_id: int, error: str) -> None:
-        task = self._coordinator.get_task(task_id)
+        task = self._download_manager.get_task(task_id)
         if task and task_id in self._item_widgets:
             self._item_widgets[task_id].update_task(task)
         self._update_queue_info()
@@ -291,7 +309,7 @@ class MainWindow(QMainWindow):
         logger.warning("ui.task_failed id=%d", task_id)
 
     def _on_task_cancelled(self, task_id: int) -> None:
-        task = self._coordinator.get_task(task_id)
+        task = self._download_manager.get_task(task_id)
         if task and task_id in self._item_widgets:
             self._item_widgets[task_id].update_task(task)
         self._update_queue_info()
@@ -308,23 +326,23 @@ class MainWindow(QMainWindow):
 
     def _on_toggle_theme(self) -> None:
         new_theme = Theme.LIGHT if current_theme() == Theme.DARK else Theme.DARK
-        apply_theme(new_theme)
-        self._settings.theme = new_theme.value
-        self._settings_repo.save(self._settings)
-        self._update_theme_btn_icon()
-        self._update_all_icons()
+        settings = self._api.get_settings()
+        settings.theme = new_theme.value
+        self._on_settings_saved(settings)
 
     def _on_open_settings(self) -> None:
-        dlg = SettingsDialog(self._settings, self)
+        dlg = SettingsDialog(self._api.get_settings(), self)
         dlg.settings_saved.connect(self._on_settings_saved)
         dlg.exec()
 
     def _on_settings_saved(self, settings: AppSettings) -> None:
-        self._settings = settings
-        self._settings_repo.save(settings)
-        self._coordinator.update_settings(settings)
-        self._options.apply_settings(settings)
-        apply_theme(Theme(settings.theme))
+        try:
+            self._settings = self._api.update_settings(settings)
+        except Exception as error:
+            self._show_operation_error(error)
+            return
+        self._options.apply_settings(self._settings)
+        apply_theme(Theme(self._settings.theme))
         self._update_theme_btn_icon()
         self._update_all_icons()
         logger.info("ui.settings_saved")
@@ -341,7 +359,7 @@ class MainWindow(QMainWindow):
         except Exception:
             logger.error("ui.open_folder.failed", exc_info=True)
 
-    def _on_history_delete(self, entry_id: int, delete_files: bool) -> None:
+    def _on_history_delete(self, entry_id: int, delete_files: bool, plan_token: str) -> None:
         """Обрабатывает запрос удаления записи истории.
 
         Args:
@@ -349,15 +367,10 @@ class MainWindow(QMainWindow):
             delete_files: Удалить файлы с диска вместе с записью.
         """
         try:
-            self._history_manager.delete(entry_id, delete_files=delete_files)
-        except CommandError as exc:
-            self._status_bar.showMessage(exc.message, 8000)
-            logger.warning(
-                "ui.history_delete.rejected id=%d delete_files=%s hint=%s",
-                entry_id,
-                delete_files,
-                exc.hint,
-            )
+            self._history_manager.delete(
+                entry_id, delete_files=delete_files, expected_plan=plan_token)
+        except Exception as error:
+            self._show_operation_error(error)
             return
 
         self._refresh_history()
@@ -372,7 +385,8 @@ class MainWindow(QMainWindow):
         if total == 0:
             self._queue_info_lbl.setText(self.tr("Очередь пуста"))
         else:
-            active = sum(1 for t in self._coordinator.get_tasks() if t.status.is_active())
+            active = sum(
+                1 for t in self._api.list_tasks() if t.status in {"downloading", "merging"})
             self._queue_info_lbl.setText(
                 self.tr("%1 загрузок, %2 активных")
                 .replace("%1", str(total))
@@ -416,8 +430,13 @@ class MainWindow(QMainWindow):
     # Lifecycle
     # ─────────────────────────────────────────────────────────────────
 
+    def cleanup(self) -> None:
+        """Release only this window's bridges, including a partial constructor."""
+        for name in ("_download_manager", "_history_manager"):
+            manager = getattr(self, name, None)
+            if manager is not None:
+                manager.cleanup()
+
     def closeEvent(self, event: QCloseEvent) -> None:
-        self._download_manager.cleanup()
-        self._history_manager.cleanup()
-        self._coordinator.shutdown()
+        self.cleanup()
         super().closeEvent(event)

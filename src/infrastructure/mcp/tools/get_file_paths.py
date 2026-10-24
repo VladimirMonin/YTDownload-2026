@@ -10,6 +10,7 @@ import logging
 from typing import Any
 
 from src.application.dto import serialize_for_transport
+from src.infrastructure.mcp.tools._utils import error_payload
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +70,7 @@ def create_get_file_paths_tool(mcp: Any, api: Any) -> None:
             result = serialize_for_transport(api.get_file_paths(id))
             logger.info("mcp.get_file_paths id=%d", id)
             return result
-        except Exception as exc:
-            logger.error("mcp.get_file_paths.error id=%d", id, exc_info=True)
-            return {"error": str(exc), "hint": "Check app logs for details"}
+        except Exception as error:
+            payload = error_payload(error)
+            logger.error("mcp.get_file_paths.failed reason_code=%s", payload["code"])
+            return payload
