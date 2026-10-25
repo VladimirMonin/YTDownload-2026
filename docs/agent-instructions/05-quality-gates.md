@@ -21,7 +21,8 @@ For runtime refactoring (including the command-first migration):
   application/tests to get green. Only the verified unchanged imported PFK checker
   is outside this first-party gate. Its own lint/recursive whole-root result is
   separately NOT_RUN unless actually checked. Q1 bound105 tracked +1 new =106;
-  future slices derive their own inventory, not a permanently fixed count.
+  Q2 bound106 tracked +3 new Python =109. Future slices derive their own inventory,
+  not a permanently fixed count.
 - If GUI behavior is affected, run a GUI smoke.
 - If MCP behavior is affected, run an MCP tool-discovery smoke.
 - Shared API/bootstrap changes also require real offline application/adapter behavior,
@@ -50,9 +51,42 @@ For runtime refactoring (including the command-first migration):
   independently closed those causes plus the newly included build I001: mypy0/68,
   configured1060, changed31 E/F/I0 and full291/7 e2e deselected/0 skips. Historical
   RED/debt receipts remain intact. These are frozen-slice facts, not a green claim
-  for unaccepted parallel Q2 work. Future changes require their own affected
-  qualification. GUI redesign/build/visual, live/native Trash/platform/package
-  qualification are not implied by Q1.
+  for arbitrary future work. Q1 alone did not imply package/GUI/live/native Trash
+  qualification. Q2's separate console/local boundary follows below; later changes
+  require their own affected qualification.
+
+## Accepted Q2 console/local boundary
+
+Q2 is independently ACCEPTED_Q2_LOCAL_OFFLINE on exact8 source paths and the
+manifest-bound full Windows x64 onedir759-file runtime. Fresh independent gates:
+affected42, offline308/7 e2e deselected/0 skipped, mypy0/68, configured E/F/I/UP0/109,
+changed6 E/F/I0, four module smokes0. Full native aggregate0 covered71 invocations /
+all11 public leaves plus8 complementary commands; these counts overlap and are
+not summed. Build/relocation/provenance and native useful outcomes are distinct
+from help/discovery and source tests.
+
+For a new materially changed artifact, verify the complete member set/hashes,
+canonical entry/registrars, existing companions/licenses, non-checkout relocation,
+actual sanitized native/SDK spawn argv/env, useful physical media/persistence and
+readonly reopen, refusals/deletion tokens, stdio EOF and HTTP stop/port/next owner.
+Use fresh owned fixtures and an independent bounded native observer as described
+in [testing](../../.github/instructions/testing.instructions.md); no implicit install,
+download, GUI build or live-URL permission is granted. A scoped verifier phase must
+leave omitted phases NOT_RUN, not impersonate the full aggregate.
+
+The accepted native Trash cell is PARTIAL_DELETE/TRASH_UNAVAILABLE UNKNOWN:
+own source disappeared, history retained, no destination/recoverability/restore
+qualification. Keep-files separately preserved recorded bytes. HTTP Ctrl+C was
+native1/INTERRUPTED, not success0; media was local MPEG-4+AAC MP4/AAC-M4A audio-only,
+not YouTube/720p/remote sidecar availability. External YouTube is
+WAITING_FOR_USER_URL / NOT_RUN. GUI build/visual/manual, other platforms/hosted CI,
+optional remote/V1/WebSocket/extras, whole legacy privacy and legal redistribution
+certification remain outside this acceptance.
+
+Prose-only finish or a new ZIP containing the byte-identical accepted payload
+requires final doc/payload identity checks, not another build/product acceptance.
+Preserve historical failures and distinguish tested artifact/source accepted-prefix
+from the later documentation/publication commit; do not relabel an old build's SHA.
 
 ## Baseline and scope caveat
 

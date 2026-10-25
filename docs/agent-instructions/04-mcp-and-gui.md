@@ -7,6 +7,32 @@ CI/Linux/Python3.12/pwsh7 remain NOT_RUN. [Verification](../command-first/VERIFI
 [CONTRACT](../command-first/CONTRACT.md) owns semantics. No GUI redesign, live
 YouTube permission, native Trash restore or platform/package certification is implied.
 
+## Accepted standalone console (Q2)
+
+Q2 independently ACCEPTED_Q2_LOCAL_OFFLINE the full Windows x64 console onedir:
+759 runtime files plus root artifact-manifest.json in the user ZIP, not ytdl.exe
+alone. Python/uv/source checkout are not runtime prerequisites for that bundle.
+Source module/installed Python entry and existing GUI are distinct modes; see
+[console start and all11 leaves](../../README.md) and [build instructions](../../.github/instructions/build_system.instructions.md).
+
+Manual PowerShell examples, replacing data paths with your own separate roots:
+
+```powershell
+.\YTDownloadCLI\ytdl.exe --help
+.\YTDownloadCLI\ytdl.exe --json --data-dir 'C:\OwnedData\cli-new' history list
+.\YTDownloadCLI\ytdl.exe --data-dir 'C:\OwnedData\stdio-new' server stdio
+.\YTDownloadCLI\ytdl.exe --data-dir 'C:\OwnedData\http-new' server http --host 127.0.0.1 --port 8765
+```
+
+The fresh independent full native aggregate covered71 invocations/all11 leaves;
+8 complementary commands are additional proof, not extra public leaves. Useful
+queries/formats/refusals, token wiring, durable local media/reopen and frozen SDK
+stdio/HTTP were exercised from external cwd with actual sanitized spawn argv/env.
+HTTP Ctrl+C was native1/INTERRUPTED, observed stopped/port reuse/next writer;
+stdio EOF/native0 was verified separately. No source-Python fake replaced EXE work.
+Local video was MPEG-4+AAC MP4, audio-only AAC/M4A, not MP3 or remote720p proof.
+GUI build/visual/manual and optional remote/V1/WebSocket/extras were not qualified.
+
 ## Existing environment and four smokes
 
 From the project root, establish owned storage/home/temp/cache/log/output roots
@@ -131,19 +157,29 @@ Legacy folder-only attribution, unsafe/shared/linked/live targets safely refuse.
 Partial/unknown moves or history-save failure retain structured counts/state and
 recovery=repreview; obtain fresh consent rather than retrying an old token.
 Installed lazy QtCore capability and synthetic recoverable moves do **not** prove
-native Trash move/restore. Never enumerate a user's bin or use permanent fallback.
+native Trash move/restore. Q2's actual own native attempt returned
+PARTIAL_DELETE/TRASH_UNAVAILABLE, UNKNOWN: source absent, history retained,
+known moved0/unknown1. Destination/recoverability/restore are not qualified; do
+not call that recoverable-success or no-effect. Tokened keep-files separately
+preserved actual recorded bytes. Never enumerate a user's bin, retry an unknown
+effect blindly or use permanent fallback.
 
 ## Evidence limits and network permission
 
-Connected checks use real parser/API/coordinator/repositories/files/SDK/Qt, replacing
+S1–S6 source connected checks use real parser/API/coordinator/repositories/files/SDK/Qt, replacing
 only external download/Trash edges with controlled owned fixtures. They verify
 native CLI outcomes, actual stdio, loopback HTTP effects/disconnect/quiescence/
 port reuse, real Qt actions/modal/settings and partial startup/cleanup failures.
 Nonempty safe file/stderr sinks and clean result/protocol stdout are separate
 from handler ownership; neither certifies whole legacy/native Qt diagnostics.
 
-Live URL/download/sidecar/codec validation needs explicit permission and a concrete
-URL under [download testing](03-download-testing.md). Linux runtime/remote CI,
-packaging/EXE/manual visual and native Trash restore remain NOT_RUN. HTTP defaults
+External YouTube/download/sidecar availability needs explicit permission and a
+concrete URL under [download testing](03-download-testing.md): currently
+WAITING_FOR_USER_URL / NOT_RUN, with no authority to choose an arbitrary sample.
+Q2's own loopback transfer was real, without a substituted download backend,
+but is not external extraction proof. Windows console package/local codecs are
+qualified only as above; Linux/other platforms/hosted CI, GUI EXE/manual visual,
+native Trash restore, whole legacy/native privacy and legal redistribution
+certification remain unqualified. HTTP defaults
 to 127.0.0.1; single-user unauthenticated local operation is not a security claim
 for an untrusted network. Never leave owned servers/threads after a check.

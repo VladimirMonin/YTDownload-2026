@@ -16,6 +16,23 @@ user settings. A missing interpreter/dependency is a blocker, not install permis
 Initial user installation is a separate action: README setup recipes are not an
 agent authorization to run `uv sync`, installers or package managers.
 
+## Standalone console distribution
+
+Q2 independently accepted the complete Windows x64 console onedir, not an
+installed Python launcher or GUI rebuild. `YTDownloadCLI/ytdl.exe` runs without
+checkout, development Python/uv or FFmpeg PATH assistance; keep `_internal/`,
+`vendor/ffmpeg/bin/{ffmpeg.exe,ffprobe.exe}`, licenses and notices with it.
+The ZIP also carries the byte-identical root artifact-manifest.json. EXE alone
+is not portable. Source `uv run --locked --no-sync python -m src.interfaces.cli`
+and the Python-installed `ytdl` entry still need their environment. Native Q2
+was Windows/Python3.14.2, not native3.12/Linux qualification.
+
+`--data-dir` and YTDL_DATA_DIR select state, not the media output root or live
+attach. A standalone readonly query on an absent root must not create it. Agent
+checks still need all owned home/config/data/temp/cache/log selectors before
+imports/children; see [testing](../../.github/instructions/testing.instructions.md).
+Build commands and new-root overwrite guards belong to [build instructions](../../.github/instructions/build_system.instructions.md).
+
 ## Application data and ownership
 
 `src.bootstrap.create_runtime(data_root=None, *, read_only=False, ...)` selects an
@@ -85,7 +102,11 @@ records permit checked keep-files, not a directory scan. Active/unquiesced jobs,
 links/reparse ancestry and shared attribution block file effects. Partial moves
 and failed history save are not rollback or confirmed deletion; read the structured
 result and repreview. Synthetic recoverable moves and installed capability were
-verified; native Trash move/restore remains NOT_RUN. S5 CLI --plan-token, MCP
+verified at S4; native recoverable move/restore was not qualified there. In Q2,
+the own native file attempt returned PARTIAL_DELETE/TRASH_UNAVAILABLE UNKNOWN:
+source disappeared, durable history remained, moved0/unknown1. No destination,
+recoverability or restore proof exists; neither success nor no-effect may be
+claimed. Keep-files separately passed on actual recorded files. S5 CLI --plan-token, MCP
 plan_token and the existing GUI modal pass the selected matching expectation.
 No-token/stale/partial outcomes still require safe refusal or a fresh preview,
 not a bypass. See [current evidence](../command-first/VERIFICATION.md).
@@ -101,11 +122,19 @@ Detection order:
    - `YTDL_FFPROBE_PATH`
    - `YTDL_FFPLAY_PATH`
 2. Bundled binaries in `vendor/ffmpeg/bin/`:
+   - Source root derives from the module path; when frozen it is the directory of
+     the resolved real `sys.executable`, **not** `_internal`/`_MEIPASS` or cwd.
+     Explicit vendor argument and env priority remain unchanged.
    - Windows: `ffmpeg.exe`, `ffprobe.exe`, `ffplay.exe`
    - Unix-like: `ffmpeg`, `ffprobe`, `ffplay`
 3. System `PATH`.
 
 Linux development should normally use the distro package, for example `/usr/bin/ffmpeg`.
+Q2 bundles only existing admitted FFmpeg/FFprobe with actual LGPL3 `-L`/configuration
+and hashes, no GPL/nonfree replacement or download. Local native media was
+MPEG-4+AAC MP4 and audio-only AAC/M4A. External YouTube/720p/remote sidecar availability
+remain WAITING_FOR_USER_URL / NOT_RUN. HTTP Ctrl+C returns native1/INTERRUPTED;
+that observed shutdown is not command success0 or a bound on all external work.
 
 ## Do not
 

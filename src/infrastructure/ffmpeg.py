@@ -8,9 +8,15 @@ from __future__ import annotations
 
 import os
 import shutil
+import sys
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).parent.parent.parent
+# Frozen onedir companions live beside the executable, not inside _internal.
+PROJECT_ROOT = (
+    Path(sys.executable).resolve().parent
+    if getattr(sys, "frozen", False)
+    else Path(__file__).parent.parent.parent
+)
 VENDOR_BIN = PROJECT_ROOT / "vendor" / "ffmpeg" / "bin"
 
 

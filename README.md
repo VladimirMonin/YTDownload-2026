@@ -10,18 +10,20 @@ CLI, прямой Python API и MCP для загрузки видео и пле
 offline-границе: runtime/storage, cooperative cancellation, truthful outcomes,
 task-ID attribution, ограниченное удаление, реальные adapters/lifetime и CI isolation.
 S5-R1 закрыт. Actual CI preparation/argv/env проверены на local Windows/Python3.14.2;
-hosted CI/Linux/Python3.12/pwsh7, live/codec, native Trash и EXE/manual visual
-не квалифицированы:
+на границе S6 hosted CI/Linux/Python3.12/pwsh7, live/codec, native Trash и
+EXE/manual visual ещё не были квалифицированы. Последующие Q1/Q2 и их пределы:
 [план](docs/command-first/PLAN.md),
 [предлагаемый контракт](docs/command-first/CONTRACT.md),
 [фактическая проверка и ограничения](docs/command-first/VERIFICATION.md).
 
-Q1 независимо технически принят: устранены first-party type/lint findings без
-ослабления правил; mypy0/68, configured Ruff0 по 106 Python files, offline291.
-Это проверенный source-срез, не готовность консольного EXE. Следующий Q2 должен
-отдельно подтвердить нашу CLI-сборку и полную командную функциональность, а не
-только запуск/help. GUI build/visual в эту работу не входят; live-проверка требует
-конкретного разрешённого пользовательского URL.
+Q1 закрыл first-party type/lint findings без ослабления правил. **Q2 независимо
+ACCEPTED_Q2_LOCAL_OFFLINE**: наша Windows x64 console onedir-сборка, relocation,
+все11 CLI-команд и полезные native сценарии, не только help. Полный native aggregate:
+71 вызов плюс8 отдельных complementary commands; offline308/7 e2e deselected/0 skips,
+mypy0/68, configured Ruff0/109, changed6 E/F/I0 и четыре module smokes0.
+Числа пересекающихся проверок не складываются. Local video/audio proof не является
+YouTube-проверкой: внешняя загрузка ждёт конкретного разрешённого URL.
+Native Trash дал partial/UNKNOWN, не recoverable-success. GUI build/visual не выполнялись.
 
 ---
 
@@ -42,9 +44,60 @@ Q1 независимо технически принят: устранены fi
 
 ---
 
+## 🖥️ Автономная консоль Windows x64
+
+Локальный пакет **`YTDownloadCLI-Windows-x64.zip`** распаковывают целиком в новую
+папку. В корне находятся `artifact-manifest.json` и каталог `YTDownloadCLI/` с
+`ytdl.exe`, `_internal/`, `vendor/ffmpeg/bin/{ffmpeg.exe,ffprobe.exe}`, лицензиями
+и notices. Не переносите один EXE: полный принятый runtime —759 files/440588786 bytes.
+Python, uv и отдельный FFmpeg для этого проверенного пакета не нужны. Это локальная
+передача пакета, не подписанный installer или GitHub Release; GUI EXE в Q2 не собирался.
+
+Из папки распаковки в PowerShell:
+
+```powershell
+.\YTDownloadCLI\ytdl.exe --help
+$exe = (Resolve-Path '.\YTDownloadCLI\ytdl.exe').Path
+$profile = Join-Path $env:TEMP ('YTDownloadCLI-demo-' + [guid]::NewGuid().ToString('N'))
+& $exe --json --data-dir $profile history list
+& $exe --data-dir $profile history --help
+& $exe --data-dir $profile queue --help
+& $exe --data-dir $profile server --help
+```
+
+Readonly list нового профиля возвращает `[]`, не создавая его. `--data-dir` выбирает
+хранилище этого процесса, **не output directory и не attach** к чужой очереди.
+Default downloads всё ещё идут в home/Downloads/YTDownloader; для тестов агента
+одного data-dir недостаточно — нужны все [owned isolation roots](.github/instructions/testing.instructions.md).
+Примеры здесь — ручная навигация, не разрешение читать личный профиль или скачивать URL.
+
+| Семейство | Все публичные leaf-команды |
+|---|---|
+| `queue` | `add`, `cancel` |
+| `history` | `list`, `get`, `search`, `transcript`, `description`, `file-paths`, `delete` |
+| `server` | `stdio`, `http` |
+
+Для будущей **разрешённой** загрузки подставляют только полученный от пользователя URL:
+
+```powershell
+& $exe --json --data-dir $profile queue add '<USER_AUTHORIZED_URL>' --quality 720p --type video --subtitle-lang en --save-subtitles --save-description --save-thumbnail
+```
+
+Без конкретного URL этот gate — **WAITING_FOR_USER_URL / NOT_RUN**. Local Q2 fixture
+дал MP4 MPEG-4+AAC и audio-only AAC/M4A, не MP3 и не доказательство720p/YouTube/
+доступности внешних sidecars. Standalone cancel возвращает OWNER_REQUIRED;
+для удаления используйте preview и matching token, предпочтительно явный keep-files.
+HTTP завершается по Ctrl+C с native1/INTERRUPTED, а не success0.
+
+Различайте входы: `ytdl.exe` — standalone console; source CLI в готовой `.venv` —
+`uv run --locked --no-sync python -m src.interfaces.cli`; установленный Python-entry
+`ytdl` также требует Python-окружение, это не EXE; `python app.py` — прежний GUI.
+Сборка из готовых зависимостей описана в [build instructions](.github/instructions/build_system.instructions.md),
+проверка native artifact — в [testing](.github/instructions/testing.instructions.md).
+
 ## 🚀 Быстрый старт
 
-Ниже — первоначальная установка **пользователем**, не разрешение агенту запускать
+Далее — **source/Python setup**, не запуск готового console ZIP. Первоначальная установка **пользователем**, не разрешение агенту запускать
 installers/скачивание/`uv sync`. В существующем окружении разработка и диагностика
 используют `.venv`, `uv run --locked --no-sync` и [правила изоляции](.github/instructions/testing.instructions.md).
 
@@ -372,8 +425,10 @@ exit0/106**, **changed E/F/I exit0/31**, **291 passed/7 e2e deselected/0 skipped
 и четыре module smokes exit0. Исходные 34 mypy и 57 Ruff findings S6, дополнительный
 build I001 (58 в полном исходном first-party gate Q1) и прежние RED сохранены;
 они не переписаны в исторический PASS. Imported checker/recursive whole-root Ruff —
-NOT_RUN. Эти числа относятся к frozen Q1, не к непринятым параллельным Q2 edits.
-Подробности — [VERIFICATION](docs/command-first/VERIFICATION.md). Live E2E требует
+NOT_RUN. Эти числа относятся к frozen Q1. Для принятого Q2 независимо получены
+mypy0/68, configured1090, changed6 E/F/I0, offline308/7 e2e deselected/0 skipped
+и четыре module smokes0; source/runtime acceptance не повторяется ради упаковки
+тех же bytes или документации. Подробности — [VERIFICATION](docs/command-first/VERIFICATION.md). Live E2E требует
 отдельного разрешения и конкретного URL; примеры руководства его не дают.
 Prose-only finish требует final-byte doc checks, не повторения принятого suite/type/lint.
 
@@ -460,8 +515,8 @@ delete_files=...)`, затем после согласия — `delete_download`
 API возвращает CONFIRMATION_REQUIRED, изменившийся план — STALE_PLAN. После отказа
 или потерянного ответа нужны новый preview и новое согласие, не автоматический retry.
 
-`delete_files=False` удаляет только запись истории. Файловый режим переносит только
-явно записанные media/sidecar paths в системную Корзину: ни каталоги, ни parent,
+`delete_files=False` удаляет только запись истории. Файловый режим запрашивает
+перенос только явно записанных media/sidecar paths в системную Корзину: ни каталоги, ни parent,
 ни unlisted/sibling files не удаляются. Одна папка в старой записи не доказывает
 принадлежность файлов (UNSAFE_FILE_SCOPE); доступен keep-files. Небезопасные roots,
 links/junction ancestry, shared paths и незавершённая работа в той же области
@@ -475,8 +530,12 @@ PARTIAL_DELETE/PERSISTENCE_FAILED: известные moved/missing/failed/unkno
 
 Default adapter — lazy QtCore Trash без QApplication и без permanent-delete fallback.
 Независимо проверены восстановимые synthetic OS-edge moves, реальная policy/JSON и
-installed capability; **native Trash move/restore остаётся NOT_RUN**, не гарантия
-восстановления на каждом OS/volume. Media+JSON не crash-atomic transaction.
+installed capability. В Q2 native delete-files на tiny own fixture вернул
+**PARTIAL_DELETE/TRASH_UNAVAILABLE, UNKNOWN**: исходник исчез, история сохранилась,
+known moved0/unknown1. Destination/recoverability/restore не квалифицированы;
+это не успешный восстановимый перенос и не отсутствие эффекта. Не повторяйте
+неизвестный эффект вслепую. Keep-files отдельно прошёл на реальных recorded files.
+Media+JSON не crash-atomic transaction.
 
 В S5 CLI `--plan-token`, MCP `plan_token` и существующий GUI modal передают
 matching plan; legacy repository-delete fallback удалён. GUI готовит оба режима
@@ -510,7 +569,7 @@ uv run --locked --no-sync python -m src.interfaces.cli --json history delete 42 
 
 | Компонент | Лицензия | Путь |
 |-----------|----------|------|
-| FFmpeg | LGPL 2.1 | `vendor/ffmpeg/LICENSE.txt` |
+| FFmpeg/FFprobe проверенного Q2 bundle | LGPL 3, actual `-L`/configuration без GPL/nonfree | `vendor/ffmpeg/LICENSE.txt`, bundle `licenses/` и `THIRD_PARTY_NOTICES.txt` |
 | Tabler Icons | MIT | `resources/icons/tabler/LICENSE` |
 | JetBrains Mono | OFL 1.1 | `resources/fonts/OFL.txt` |
 | NotoSans | OFL 1.1 | `resources/fonts/OFL.txt` |

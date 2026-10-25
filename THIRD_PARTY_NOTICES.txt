@@ -1,0 +1,43 @@
+YTDownloadCLI local onedir artifact — third-party notices
+
+This is a local build, not a signed installer or a public release. The executable
+requires its complete companions directory; do not distribute ytdl.exe alone.
+Versions, file hashes, build inputs and actual component provenance are recorded
+in artifact-manifest.json. No component is downloaded by the build helper.
+
+Python — Python Software Foundation License and the notices reproduced in
+licenses/Python_LICENSE.txt. The embedded runtime is supplied by the existing
+Python installation used to build this artifact.
+
+PySide6 / Qt for Python / Shiboken — the LGPL-3.0 option is used, not a commercial
+license grant. Dynamically loaded Qt/Shiboken libraries remain separate,
+replaceable files under _internal. The LGPL text is in licenses/LGPL-3.0.txt;
+installed component license metadata and any additional upstream notices remain
+with the corresponding .dist-info directories. Upstream source and licensing:
+https://code.qt.io/cgit/pyside/pyside-setup.git/ and https://www.qt.io/licensing/.
+Replacement libraries must be interface-compatible with this Python/Qt build.
+No restriction on reverse engineering for debugging modifications is imposed by
+this local packaging arrangement. Public redistribution compliance is not certified
+by a local functional test.
+
+FFmpeg / FFprobe — existing vendor binaries, selected through the project's
+resolver, are separately replaceable under vendor/ffmpeg/bin. The build verifies
+actual -version/-L output: LGPL, without --enable-gpl or --enable-nonfree. See
+licenses/FFmpeg_LICENSE.txt and component hashes/configuration in the manifest.
+Upstream source: https://ffmpeg.org/; exact local build identification is preserved
+in the component record. No GPL/nonfree replacement is obtained automatically.
+
+FastMCP — Apache-2.0; yt-dlp — The Unlicense; uvicorn — BSD-3-Clause.
+Their installed license texts are copied to licenses/. Runtime dependency metadata
+and its included license/notice files are retained under _internal/*.dist-info/.
+These notices do not change any upstream component's license.
+
+PyInstaller — used as the existing build tool. Its embedded bootloader/related
+files carry the explicit Bootloader Exception permitting combined executables
+without GPL restrictions arising from those files; runtime hooks are Apache-2.0.
+See licenses/PyInstaller_COPYING.txt for the unmodified full terms. PyInstaller
+itself is not offered as a new installed tool by this artifact.
+
+Windows system libraries are platform prerequisites, not downloaded drivers or
+new system installations. This build/test does not authorize redistribution of
+unidentified proprietary, GPL or AGPL components.

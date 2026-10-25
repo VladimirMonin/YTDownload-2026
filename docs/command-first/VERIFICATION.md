@@ -4,12 +4,12 @@ title: "YTDownload — фактическая проверка command-first"
 kind: verification
 status: accepted
 created: "2026-10-23"
-updated: "2026-10-24"
+updated: "2026-10-25"
 areas: [testing, isolation, logging, compatibility]
-summary: "S1–S6 offline и follow-up Q1 независимо приняты; Q1 mypy0/68, configured first-party1060, offline291. Historical RED/S6 debt и native/live/platform/package пределы сохранены."
-code_ref: "7489a6d95934cc4853ab92940b489d90cf8562a9"
-code_verified_at: "2026-10-24"
-verification_scope: "Accepted S6 база и exact Q1 manifest4dc1136a (31 paths), technical9b2d8591: mypy0/68, configured1060, changed31 E/F/I0, affected63/full291, four smokes0, actual enum/serializer/SDK/Qt compatibility. Не распространяется на параллельный Q2 worktree; PFK checker/recursive root, hosted/Linux/Python3.12/pwsh7/native/live/EXE/visual NOT_RUN."
+summary: "S1–S6/Q1 и Q2 console LOCAL_OFFLINE независимо приняты; Q2 native71/all11 leaves, offline308, mypy0/68, configured1090. Historical RED и URL/Trash-recovery/GUI/platform пределы сохранены."
+code_ref: "c37504b72dfab51a60da2fce5cf171e37f138e95"
+code_verified_at: "2026-10-25"
+verification_scope: "Accepted Q1 base плюс exact Q2 manifest9b691663 (8 paths), technicalc7ae85c1, artifact7ab95f03: complete Windows x64 console759, native full71/11 leaves +8 complements, affected42/full308, mypy0/68, configured1090, changed6 E/F/I0, four smokes0. External YouTube WAITING_FOR_USER_URL; native Trash UNKNOWN, recoverability/restore NOT_QUALIFIED; GUI build/visual/other platforms/hosted CI/optional extras/legal certification NOT_RUN. Не будущий build SHA."
 related: [ytdl-command-first-plan, ytdl-command-first-contract]
 ---
 
@@ -1437,3 +1437,139 @@ visual/manual GUI/GUI build и whole legacy/native Qt privacy. Локальны�
 Synthetic media/Trash и source-tree/offscreen proofs этих границ не снимают.
 Текущий фокус Q2 — наша CLI-сборка и полезные полные командные сценарии, не GUI;
 Q1 не объявляет эту следующую работу выполненной.
+
+## Q2 — standalone console и полная local native CLI-проверка (2026-10-25)
+
+**ACCEPTED_Q2_LOCAL_OFFLINE** для целого exact8 candidate и immutable candidate-02.
+Это последующий результат, не переписывание исторических S1–S6/Q1/RED выше.
+Accepted-prefix/build base `c37504b72dfab51a60da2fce5cf171e37f138e95` плюс frozen
+Q2 overlay; документирование/commit/ZIP не превращают bundle в сборку по будущему SHA.
+
+| Authority | SHA256 |
+|---|---|
+| Exact source8 manifest | `9b69166358db28ff1986583f3384056dd69e6d5455a493deaa501cd69e53810d` |
+| Source freeze tar | `2f9f6c808f1f909a4c652ead593df2892f6ae2bb78d4b1c35d91d750d9b26f1f` |
+| Whole artifact manifest | `7ab95f0386875a257d06997146ccae711b1a69afe5b7bb86cf26c2e275ce9e97` |
+| Whole artifact tar | `0700ade0a7dbcfbdcf91f4c7f6b43f252ea5622ffc41502585f74efed49d0785` |
+| Independent technical acceptance | `c7ae85c1e97b6745a9b6e0116a1e70cd39f3cf63c2735a01c0c63ab73f23af02` |
+| Completed independent report | `df6f04677c1c05e783a5927cd0aecb30c8f5d97c8104cbb9a584bd155e6342fc` |
+
+### Полный пакет и code/build binding
+
+Восемь paths: ytdl_cli.py, build/ytdl_cli.spec, build/build.py,
+src/infrastructure/ffmpeg.py, tests/test_ffmpeg_detection.py,
+tests/test_cli_packaging.py, scripts/smoke_cli_exe.py, THIRD_PARTY_NOTICES.txt.
+Независимо проверены finite132 inputs до acquisition,3 preimages/5 absences,
+PFK74 и admitted parent; `.serena/` — opaque metadata, не body/hash/copy/staging.
+
+Реальная существующая PyInstaller6.19.0/Windows/Python3.14.2 сборка дала **console
+x64 PE32+ subsystem3, onedir759 files/440588786 bytes**. Tar содержит760 members
+вместе с artifact-manifest.json. Полный runtime сверён member-by-member между
+retained/archive и новой independent relocation с пробелами; другой external cwd.
+EXE отдельно непереносим. User ZIP содержит ровно те же759 files + тот же manifest,
+не private evidence/source/fixtures и не новый runtime. Checksum/container receipt
+относятся к local delivery отдельно от этого build identity; GitHub Release не implied.
+
+119 actual build snapshot inputs bound. Единственный postbuild delta — verifier,
+отсутствующий в application PYZ вместе с tests/build helper. Независимо равны code
+objects entry и всех52 embedded project modules из current accepted bytes; все
+canonical dynamic MCP registrars присутствуют. Existing source/env/explicit/
+platform/PATH discovery сохранено; frozen vendor root — resolved реальный EXE,
+не cwd/_internal/_MEIPASS. Новые external work/dist guards не заменяют старые builds.
+GUI helper AST/default/spec/installer сохранены, GUI build/visual не выполнялись.
+
+Existing FFmpeg/FFprobe hashes, actual -version/-L/configuration без GPL/nonfree,
+7 license texts/provenance сверены. Local test не сертифицирует public redistribution.
+174 warning lines/158 module records индивидуально bound/reviewed: aliases/platform/
+typing/optional branches не выданы за tested runtime features. Candidate-01 real
+missing-registrar RED сохранён; candidate-02 factory/SDK/useful operations прошли.
+
+### Fresh independent native aggregate и полезные эффекты
+
+Полный default verifier **raw/native0,71 native rows/all11 leaves**, не help-only,
+не author composite и не server-only run. Независимый outer watchdog/Job наблюдал
+actual images/creation identities/82 signaled handles, live-before-close=[], без
+emergency cleanup. Native/companion env не имел dev Python/.venv/uv/checkout/FFmpeg
+PATH или PYTHONPATH/PYTHONHOME/VIRTUAL_ENV/YTDL_FFMPEG_* assistance; actual SDK
+spawn argv/env проверены, не только constructor options. Source API готовил только
+labelled own stores и закрывался до native commands, не fake backend/API вместо EXE.
+
+- queue add: настоящие EXE/yt-dlp/own loopback HTTP video/audio, acceptance затем
+  terminal/persistence, два fresh native reopen, physical attributed media/info JSON,
+  invalid quality и настоящий local404; failed transfer отдельно native-reopened.
+- queue cancel: preview/confirm → OWNER_REQUIRED, absent profile не создан; ложного
+  успешного cross-process cancel нет.
+- history list/get/search/transcript/description/file-paths: absent-root readonly,
+  nonempty/status/limit, formats/global JSON, другой cwd, recorded VTT/description,
+  raw/timestamps/lang, missing/invalid input, exact paths и useful next query.
+- history delete: preview/forced preview/no token/matching token/keep-files/replay,
+  material staleness/recorded-missing, durable readback и unrelated/parent preservation;
+  native file effect отдельно ограничен ниже, не success.
+- server stdio: exact10 discovery/useful get/description, EOF/native0/join.
+  server http: own127.0.0.1 SDK list/get, own Ctrl+C → **native1/INTERRUPTED**,
+  stopped/empty stdout/port reuse; следующий writable EXE stdio owner useful/native0/EOF.
+
+Отдельный complement native0/8 commands подтвердил env-only data-root selection,
+keep-files на действительно recorded media/description/VTT с сохранением всех bytes,
+unlisted sibling/parent, fresh NOT_FOUND/replay, useful next query и persisted failed
+404 reopen/store preservation. Это не ещё8 public leaves и не арифметика coverage.
+
+Video — byte-identical MP4 MPEG-4 320×180 + AAC; audio — **AAC/M4A audio-only**,
+1s, distinct task namespaces/history/info JSON. Не MP3/720p/YouTube qualification.
+Generic fixture не даёт внешние subtitles/description/thumbnail: []/null правдивы;
+seeded sidecars доказывают только чтение сохранённых own bytes.
+
+### Native Trash — UNKNOWN, не подтверждённое восстановимое удаление
+
+Собственный tiny native file attempt: **native1 / PARTIAL_DELETE**, nested
+TRASH_UNAVAILABLE, status/effect UNKNOWN, known moved0/failed0/unknown1,
+history_deleted=false. Source исчез, durable history retained и fresh get полезен.
+Destination/recoverability/restore не проверены. Не «no effect» и не recoverable-success.
+Bin не просматривался, исчезнувший fixture не ретраился, permanent/recursive fallback нет.
+Исходный Q2 scope допускает concrete capability/unknown boundary; whole local
+acceptance принимает её только как честно ограниченный исход, не как delete-files
+success. Tokened keep-files положительно проверен отдельно на physical recorded bytes.
+
+### Final-byte source gates и сохранённая история отказов
+
+| Свежая independent проверка | Raw/native | Результат |
+|---|---:|---|
+| Affected packaging/FFmpeg | 0 |42 passed |
+| Full offline | 0 |308 passed/7 e2e deselected/0 skipped; exact old291 +new17 |
+| mypy src | 0 |68 source files |
+| Configured Ruff E/F/I/UP | 0 |Finite109:106 tracked +3 new Python, literal separate argv |
+| Changed6 E/F/I | 0 |Не подмена configured109 |
+| Four source module smokes | 0 each |GUI только unchanged automated compatibility, не GUI build |
+
+Все308 author/fresh cases/source/assertions reconciled; старые291 и guards не
+ослаблены. 42/308/17 и повторные прогоны не суммируются. Полная ранняя owned isolation,
+audited plugin/offline/no-sync/no-download/no-bytecode/offscreen/no-track/no-update,
+fresh native absolute basetemp, tests/downloads excluded before collection.
+
+Author45 prior runs и71-row ledger bound. Author query/media04 остался aggregate
+raw1 старого HTTP-controller; corrected server-only07 — scoped0 с остальными phases
+NOT_RUN. Это не fresh all-phases PASS автора. Для независимого verdict Reviewer
+реально выполнил все phases в одном новом aggregate0 выше. Meaningful RED сохранены.
+Собственные setup raw1/E902 от CR-suffixed lint argv и metadata raw1 от ошибочного
+MP3 observer сохранены; только тот же configured gate/NEW read-only observer
+исправлены, native0. Actual unchanged backend/ffprobe задают M4A/AAC; product/build/
+native suite ради observer не повторялись. No suppression/config weakening.
+
+### Конечность, reuse и неисполненные границы
+
+Все восемь исходных Q2 obligations disposed, обязательных findings нет. Own
+process/handle/listener/writer cleanup подтверждён native exits/finally/join,
+последний внешний release root0/all handles signaled/watchdog=false. Same Reviewer
+после технической приёмки завершает только affected docs/links/literals и selective
+Git/local ZIP; это отдельные факты, не новый acceptance cycle. Accepted source8 и
+artifact bytes остаются frozen. Prose-only delivery не запускает308/mypy/Ruff/smokes/
+EXE/build заново и не меняет actual build accepted-prefix на будущий commit SHA.
+
+**WAITING_FOR_USER_URL / NOT_RUN:** external YouTube/extraction/quality/remote sidecars,
+конкретного разрешённого URL нет; local gate/delivery это не блокирует. Не выбирать
+sample и не скачивать solvers/tools. **Не квалифицированы:** native Trash destination/
+recoverability/restore; GUI build/design/visual/manual; hosted CI/Linux/Python3.12/
+pwsh7/иные платформы; optional remote/V1/WebSocket/HTTP2/3/UI/solver/extras; whole legacy/
+native Qt privacy и legal redistribution certification. Imported PFK checker lint/
+recursive whole-root Ruff — NOT_RUN. Нормативные PLAN/CONTRACT и исторические bodies
+сохранены; zero remote jobs/contexts не означают PASS.

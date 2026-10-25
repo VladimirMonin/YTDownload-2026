@@ -12,6 +12,11 @@ restore или полная legacy диагностика:
 [фактическая проверка](command-first/VERIFICATION.md), [план](command-first/PLAN.md). Ни этот текст, ни пример URL не разрешают
 агенту реальную загрузку или доступ к личным данным.
 
+**Консольный пакет Q2:** для `YTDownloadCLI-Windows-x64.zip` используйте
+[запуск standalone CLI в основном README](../README.md), а не GUI first-launch
+ниже. Полный console onedir принят local/offline; это не сборка или visual-приёмка
+`YTDownloader.exe`. Дальнейшие разделы сохраняют руководство существующего GUI.
+
 > Настольное приложение для загрузки видео и плейлистов с YouTube.  
 > Работает на Windows, не требует установки Python или дополнительного ПО.
 
