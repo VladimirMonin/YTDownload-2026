@@ -8,6 +8,7 @@ import sys
 import threading
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
+from itertools import cycle, islice
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -36,7 +37,7 @@ from tests.test_adapter_integration import GateEdge, child_env
 @pytest.mark.parametrize(
     "enum,values",
     [
-        (QualityOption, "best 1080p 720p 480p 360p audio"),
+        (QualityOption, "best 2160p 1440p 1080p 720p 480p 360p audio"),
         (DownloadType, "video audio"),
         (DownloadStatus, "queued downloading merging done failed cancelled"),
         (Theme, "dark light"),
@@ -61,7 +62,7 @@ def test_enum_legacy_value_hash_json_string_and_format(enum, values):
         assert format(member, ">40") == legacy.rjust(40)
     if enum is QualityOption:
         assert [v.display_name() for v in enum] == [
-            "Лучшее", "1080p", "720p", "480p", "360p", "Только аудио",
+            "Лучшее", "2160p", "1440p", "1080p", "720p", "480p", "360p", "Только аудио",
         ]
     if enum is DownloadStatus:
         assert [v.display_name() for v in enum] == [
@@ -73,8 +74,11 @@ def test_enum_legacy_value_hash_json_string_and_format(enum, values):
 
 def test_enums_actual_settings_history_json_reopen(tmp_path):
     profile = tmp_path / "profile"
+    # Qualities and statuses are independent enums, no equal-cardinality contract.
+    statuses = list(islice(cycle(DownloadStatus), len(QualityOption)))
+    assert set(statuses) == set(DownloadStatus)
     with create_runtime(profile) as runtime:
-        for i, (quality, status) in enumerate(zip(QualityOption, DownloadStatus, strict=True), 1):
+        for i, (quality, status) in enumerate(zip(QualityOption, statuses, strict=True), 1):
             kind = DownloadType.VIDEO if i % 2 else DownloadType.AUDIO
             settings = replace(runtime.api.get_settings(), quality=quality, download_type=kind,
                                output_dir=tmp_path / "output", theme=Theme.LIGHT.value)
@@ -88,9 +92,12 @@ def test_enums_actual_settings_history_json_reopen(tmp_path):
         assert saved.quality is QualityOption.AUDIO and saved.download_type is DownloadType.AUDIO
         assert saved.theme == "light"
         entries = sorted(reopened.api.list_history_entries(), key=lambda e: e.id)
-        assert [e.status for e in entries] == list(DownloadStatus)
+        assert [e.status for e in entries] == statuses
         assert [e.quality for e in entries] == list(QualityOption)
-        assert [e.download_type for e in entries] == [DownloadType.VIDEO, DownloadType.AUDIO] * 3
+        assert [e.download_type for e in entries] == [
+            DownloadType.VIDEO if i % 2 else DownloadType.AUDIO
+            for i in range(1, len(QualityOption) + 1)
+        ]
     assert (profile / "data/history.json").read_bytes() == disk
 
 

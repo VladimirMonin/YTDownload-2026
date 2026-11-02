@@ -20,6 +20,8 @@ class QualityOption(StrEnum):
     __format__ = Enum.__format__
 
     BEST = "best"
+    P2160 = "2160p"
+    P1440 = "1440p"
     P1080 = "1080p"
     P720 = "720p"
     P480 = "480p"
@@ -30,6 +32,8 @@ class QualityOption(StrEnum):
         """Возвращает отображаемое имя для UI."""
         names = {
             self.BEST: "Лучшее",
+            self.P2160: "2160p",
+            self.P1440: "1440p",
             self.P1080: "1080p",
             self.P720: "720p",
             self.P480: "480p",
@@ -56,7 +60,7 @@ class AppSettings:
     Attributes:
         output_dir: Папка для сохранения загрузок.
         proxy: Прокси (socks5://... или http://...), пустая строка = нет.
-        quality: Желаемое качество видео.
+        quality: Верхняя граница высоты; фактическое доступное видео может быть ниже.
         download_type: Тип контента (видео или аудио).
         subtitle_lang: Язык субтитров (ru, en, kk, ...).
         save_subtitles: Сохранять субтитры.

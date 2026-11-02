@@ -55,6 +55,29 @@ For runtime refactoring (including the command-first migration):
   qualification. Q2's separate console/local boundary follows below; later changes
   require their own affected qualification.
 
+## Accepted Q3 source-only boundary
+
+**ACCEPTED_Q3_SOURCE_ONLY_LIVE_BLOCKED** covers the entire8-file candidate02,
+not just its last2 repaired files. The original strict R1/R2 drivers passed on
+final bytes: no preexisting JPEG/PNG adoption; own early description retained
+before subtitle403 with media GET0, paired media403 retains4 files. Current
+regressions3/siblings21, mypy-owner1, configured2 and narrow2 are native0.
+
+Prior candidate01's scoped336 offline/103 connected/mypy68/configured112/changed8/
+four smokes and9 synthetic API/source CLI/MCP×1080/1440/2160 observations are
+qualified reuse after exact unchanged6/protected110/input/AST binding, not fresh
+whole-run results. Current API1080/CLI1440/FastMCP2160 exercises the changed path/
+identity owner; adapter/height policy is unchanged. No counts are summed.
+The old NEEDS_CHANGES/RED remains historical, not automatic successor acceptance.
+
+This bounded source increment is eligible for the existing SAME Reviewer docs/
+selective source commit/push grant, with factual limits. **Original YouTube
+media403 remains OPEN/BLOCKED**; source acceptance/commit is not a403 repair or
+whole-task completion. Missing EJS/Node setup is not a proven cause; timed-out
+component/player-JS permission is NOT_GRANTED. No new install/config/code fetch/
+YouTube retry/renewed ask. Q2 ZIP/EXE is unchanged, not rebuilt and has no Q3 code.
+Details: [Q3 verification](../command-first/VERIFICATION.md#q3-source-only-increment).
+
 ## Accepted Q2 console/local boundary
 
 Q2 is independently ACCEPTED_Q2_LOCAL_OFFLINE on exact8 source paths and the
@@ -78,8 +101,9 @@ The accepted native Trash cell is PARTIAL_DELETE/TRASH_UNAVAILABLE UNKNOWN:
 own source disappeared, history retained, no destination/recoverability/restore
 qualification. Keep-files separately preserved recorded bytes. HTTP Ctrl+C was
 native1/INTERRUPTED, not success0; media was local MPEG-4+AAC MP4/AAC-M4A audio-only,
-not YouTube/720p/remote sidecar availability. External YouTube is
-WAITING_FOR_USER_URL / NOT_RUN. GUI build/visual/manual, other platforms/hosted CI,
+not YouTube/720p/remote sidecar availability. At the Q2 boundary external YouTube
+was WAITING_FOR_USER_URL / NOT_RUN; the current Q3 OPEN/BLOCKED state is above.
+GUI build/visual/manual, other platforms/hosted CI,
 optional remote/V1/WebSocket/extras, whole legacy privacy and legal redistribution
 certification remain outside this acceptance.
 

@@ -57,9 +57,11 @@ def create_add_download_tool(mcp: Any, command_api: Any) -> None:
         4. Download runs in background; use list_downloads() to check progress.
         5. Use get_download(task_id) when done to get file paths.
 
-        QUALITY OPTIONS:
-        - "best"  → highest available quality
-        - "1080p" → Full HD
+        QUALITY OPTIONS (height caps, not exact-output guarantees):
+        - "best"  → highest available quality under the existing format policy
+        - "2160p" → up to 2160 pixels high (4K)
+        - "1440p" → up to 1440 pixels high (QHD)
+        - "1080p" → up to 1080 pixels high (Full HD)
         - "720p"  → HD (default)
         - "480p"  → SD
         - "360p"  → low quality
@@ -84,7 +86,8 @@ def create_add_download_tool(mcp: Any, command_api: Any) -> None:
 
         Args:
             url: YouTube video or playlist URL (must start with http/https).
-            quality: Download quality — see QUALITY OPTIONS above.
+            quality: Requested maximum height. Lower or unknown source height is possible;
+                inspect the saved info JSON/media for actual dimensions. See QUALITY OPTIONS.
             download_type: "video" (merged mp4) or "audio" (m4a only).
             subtitle_lang: Subtitle language code e.g. "ru", "en", "kk". None = skip.
             save_subtitles: Download subtitle files (.vtt/.srt) alongside video.

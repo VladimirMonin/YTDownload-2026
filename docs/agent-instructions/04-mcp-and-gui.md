@@ -33,6 +33,25 @@ stdio EOF/native0 was verified separately. No source-Python fake replaced EXE wo
 Local video was MPEG-4+AAC MP4, audio-only AAC/M4A, not MP3 or remote720p proof.
 GUI build/visual/manual and optional remote/V1/WebSocket/extras were not qualified.
 
+## Accepted Q3 source-only increment
+
+The entire8-file candidate02 is independently **ACCEPTED_Q3_SOURCE_ONLY_LIVE_BLOCKED**.
+Common API/source CLI/FastMCP accepts1440p/2160p alongside the legacy options; numeric
+quality is a height cap, not exact output. Lower/unknown height is possible; best/
+audio/default720p semantics are unchanged. Inspect saved infoJSON/media dimensions.
+Exact SDK-planned preexisting sidecars are not adopted; a newly written description
+before requested RU subtitle403 remains in DTO/history/reopen, with failed status.
+R1/R2 strict controls passed. Fresh3 regressions/21 siblings/owner1 mypy/configured2/
+narrow2 passed; previous336/103/68/112/changed8/four-smokes and9 synthetic API/CLI/MCP
+quality/media cases are explicitly qualified reuse, not fresh whole runs.
+
+Current three diagonal cases used real API1080/source CLI1440/FastMCP2160, SDK,
+FFmpeg, ffprobe,5 physical files and persisted reopen. FastMCP was in-process,
+not a new transport qualification. GUI enum bindings/compatibility are retained,
+not a desktop/visual campaign. **Historical Q2 ZIP/EXE is unchanged and has no Q3.**
+Original YouTube media403 remains OPEN/BLOCKED; no new JS/component grant or retry.
+Details: [Q3 verification](../command-first/VERIFICATION.md#q3-source-only-increment).
+
 ## Existing environment and four smokes
 
 From the project root, establish owned storage/home/temp/cache/log/output roots
@@ -174,8 +193,11 @@ Nonempty safe file/stderr sinks and clean result/protocol stdout are separate
 from handler ownership; neither certifies whole legacy/native Qt diagnostics.
 
 External YouTube/download/sidecar availability needs explicit permission and a
-concrete URL under [download testing](03-download-testing.md): currently
-WAITING_FOR_USER_URL / NOT_RUN, with no authority to choose an arbitrary sample.
+concrete URL under [download testing](03-download-testing.md). Q2's URL wait is
+historical: one URL was later supplied, but real media403 is now OPEN/BLOCKED.
+Missing EJS/Node setup is not a proven cause; the component/player-JS form timed
+out unanswered = NOT_GRANTED. No new attempts/config/install/code fetch, repeated
+permission ask or arbitrary sample is authorized by source acceptance/delivery.
 Q2's own loopback transfer was real, without a substituted download backend,
 but is not external extraction proof. Windows console package/local codecs are
 qualified only as above; Linux/other platforms/hosted CI, GUI EXE/manual visual,

@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from src.application.command_api import CommandError
+from src.domain.models.app_settings import QualityOption
 from src.infrastructure.mcp.tools._utils import error_payload
 
 Handler = Callable[[argparse.Namespace], int]
@@ -294,7 +295,13 @@ def _add_queue_commands(subparsers: Any) -> None:
         description="Add a video or playlist URL to the download queue.",
     )
     add_parser.add_argument("url")
-    add_parser.add_argument("--quality", default="720p")
+    add_parser.add_argument(
+        "--quality", default="720p",
+        help=(
+            "Video height cap, not an exact-output guarantee: "
+            + ", ".join(option.value for option in QualityOption)
+        ),
+    )
     add_parser.add_argument(
         "--type",
         dest="download_type",

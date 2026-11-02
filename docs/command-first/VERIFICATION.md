@@ -4,12 +4,12 @@ title: "YTDownload — фактическая проверка command-first"
 kind: verification
 status: accepted
 created: "2026-10-23"
-updated: "2026-10-25"
+updated: "2026-11-02"
 areas: [testing, isolation, logging, compatibility]
-summary: "S1–S6/Q1 и Q2 console LOCAL_OFFLINE независимо приняты; Q2 native71/all11 leaves, offline308, mypy0/68, configured1090. Historical RED и URL/Trash-recovery/GUI/platform пределы сохранены."
-code_ref: "c37504b72dfab51a60da2fce5cf171e37f138e95"
-code_verified_at: "2026-10-25"
-verification_scope: "Accepted Q1 base плюс exact Q2 manifest9b691663 (8 paths), technicalc7ae85c1, artifact7ab95f03: complete Windows x64 console759, native full71/11 leaves +8 complements, affected42/full308, mypy0/68, configured1090, changed6 E/F/I0, four smokes0. External YouTube WAITING_FOR_USER_URL; native Trash UNKNOWN, recoverability/restore NOT_QUALIFIED; GUI build/visual/other platforms/hosted CI/optional extras/legal certification NOT_RUN. Не будущий build SHA."
+summary: "S1–S6/Q1/Q2 history сохранена. Q3 entire8 source-only принят после R1/R2 recheck: strict controls0, fresh3/21, owner1/configured2/narrow2; qualified reuse отдельно. Original real media403 OPEN/BLOCKED; Q2 ZIP без Q3."
+code_ref: "327daaf5a8fc9dca2d4cf7bdf130d5fcabe15371"
+code_verified_at: "2026-11-02"
+verification_scope: "Q3 accepted parent327daaf + exact entire8 overlay manifestbe201b0a, technicala7f9150e: source/core/qualities/local only. Candidate02 strict R1/R2 controls0, fresh3regressions/21siblings/owner1mypy/configured2/narrow2; prior336/103/68/112/changed8/four-smokes/9media explicitly qualified reuse. Original real media403 OPEN/BLOCKED; no JS grant or new attempts. Historical Q2 artifact7ab95f03/ZIPde015c87 unchanged, no Q3; not a future publication/build SHA. Trash recovery/GUI/platform/hosted CI limits retained."
 related: [ytdl-command-first-plan, ytdl-command-first-contract]
 ---
 
@@ -1573,3 +1573,113 @@ pwsh7/иные платформы; optional remote/V1/WebSocket/HTTP2/3/UI/solve
 native Qt privacy и legal redistribution certification. Imported PFK checker lint/
 recursive whole-root Ruff — NOT_RUN. Нормативные PLAN/CONTRACT и исторические bodies
 сохранены; zero remote jobs/contexts не означают PASS.
+
+## Q3 source-only increment
+
+### Независимое решение — 2026-11-02
+
+**ACCEPTED_Q3_SOURCE_ONLY_LIVE_BLOCKED** относится ко всему cumulative8-file
+candidate02, не только к последнему repair2. Source delivery eligibility явно
+подтверждена SAME Reviewer. **Original real YouTube media403 остаётся OPEN/BLOCKED**:
+source acceptance/commit не successful live repair и не whole-task completion.
+
+Accepted prefix — parent `327daaf5a8fc9dca2d4cf7bdf130d5fcabe15371` плюс exact
+manifest overlay ниже. Это не build SHA и не будущий documentation/publication SHA.
+Source8: `src/domain/models/app_settings.py`, `src/infrastructure/ytdlp_service.py`,
+`src/interfaces/cli/root.py`, `src/infrastructure/mcp/tools/add_download.py`,
+`tests/test_type_contracts.py`, `tests/test_quality_policy.py`,
+`tests/test_ytdlp_diagnostics.py`, `tests/test_quality_integration.py`.
+
+| Bound record | SHA256 |
+|---|---|
+| Candidate02 entire8 manifest | `be201b0a7ab99696128ad8fcd182592adfee57b9ada239bf1c191a979779c304` |
+| Source freeze archive | `09f0d4984167f06d14fa6ecd7ecd8f3a3200602ca0b6375e22f1451faa95d68e` |
+| Independent technical verdict | `a7f9150e3fbb9e5725fe8f9858ddd57e645beb9a4e35881a54ec9424f6f6d006` |
+| Current canonical technical report | `c740184e3ca5c18b0a11a7677d4e6e4410df4dca91c18f1d04e613b0adbf8640` |
+| Technical HANDOFF | `3df5f30555ac4516061404e84b20c7195635f2bbd09309b611330d5a2678bf1b` |
+| Technical RELEASE | `a6957741a4985b8df258aa14963eec4377f9d4719a2f646b6347adfb043e78e2` |
+
+Evidence retained outside Git: `reviewer-evidence/q3/technical-02/` contains full
+`FINAL.md`, structured verdict/HANDOFF/RELEASE and actual outer terminal proof.
+Finite129 inputs, current8/original5 preimages/3 absences/repair2 preimages and15
+safe regular archive members bound; other6 and110 protected unchanged. Old canonical
+report preserved byte-exact before replacement, hash
+`3fa6b613e37647c3e202664597f4139588a97736d914d4fad96d8d759f437ac5`.
+Candidate01 verdict `ab76722514aaee2cfead5b04045c356e11d66edab938c8aeefe3523af2f50ce4`
+remains **NEEDS_CHANGES** for those earlier bytes; neither its RED nor observer
+failures were erased or relabelled successor acceptance.
+
+### Реальный scope и закрытые findings
+
+Common core/API/source CLI/MCP принимает `best`, `2160p`, `1440p`, `1080p`, `720p`,
+`480p`, `360p`, `audio`; default720p и legacy enum value/hash/JSON/string/format,
+settings/history, best/audio semantics сохранены. Числовое качество — height cap,
+не exact-resolution гарантия: lower/unknown возможны, known above-cap fallback
+не допускается. Actual dimensions берутся из сохранённого infoJSON/media.
+Оба GUI списка потребляют enum; новая desktop/visual/GUI-build проверка не implied.
+
+- **Q3-R1 closed:** original immutable strict driver native0. Clean JPEG GET1 с
+  полезными actual bytes; distinct preexisting JPEG/PNG GET0, bytes/identity сохранены,
+  нет adoption в DTO/artifact_paths/persisted readonly history. Foreign preexisting
+  description и unlisted file отдельно сохранены/excluded. Plan использует exact
+  SDK filename helpers до effects, не ещё один suffix или directory/newest scan.
+- **Q3-R2 closed:** original immutable strict driver native0. Реальный og:description
+  создаёт файл до RU subtitle403: physical1/recorded1, description DTO/history/reopen,
+  media GET0. Парный media403 удерживает все4 sidecars с той же description SHA.
+  Новый final fixture действительно экспонирует description; failed остаётся failed.
+
+Cancellation/progress/final hooks, no-adoption/outside-root fences и logging mapper
+сохранены. Useful next writer/history preservation, runtime/HTTP/thread close и
+port rebind проверены. Непустые main/error/stderr403 sinks содержат safe technical
+reason, без synthetic URL/token/title/path/description markers; blanket privacy
+всего legacy/native Qt этим не доказана.
+
+### Fresh affected gates и qualified reuse
+
+| Candidate02 fresh independent run | Native | Факт |
+|---|---:|---|
+| Original R1/R2 causal controls | 0 each | Byte-exact strict drivers, не авторские receipt-флаги |
+| Current diagnostic/ownership regressions | 0 |3 passed,0 skips |
+| Relevant backend + physical adapter siblings | 0 |21 passed,0 skips |
+| mypy repaired owner | 0 |1 source file |
+| Configured Ruff E/F/I/UP | 0 |2 repaired files |
+| Narrow E/F/I | 0 |2 repaired files |
+
+Current API1080/source CLI1440/FastMCP2160 проходили настоящий SDK/DASH/FFmpeg,
+ffprobe height/audio,5 physical files (video/RU VTT/PNG/description/infoJSON),
+terminal/persistence/readonly reopen. CLI — native0, один acceptance stdout JSON,
+пустой stderr. MCP — реальный **in-process** Client/tool/shared facade, не новая
+transport qualification. Thumbnail404 — failed/PARTIAL_DOWNLOAD с4 файлами;
+source-fixture без extras — done/null/[] с2 файлами. Всё **synthetic own loopback**,
+не YouTube/remote codec/access/source-absence proof.
+
+Previous independent candidate01 scoped336 offline/7 e2e deselected/0 skips,
+103 connected, mypy68/configured112/changed8/four-smokes0 и9 synthetic API/CLI/MCP
+×1080/1440/2160 observations — **qualified reuse**, не fresh whole totals на
+candidate02. Source6/inputs/AST/options/selector/adapters/fixtures/SDK-plugin bindings
+неизменны; changed path/identity owner проверен current strict controls/3/21/owner1/
+repair2 lint. В repair нет adapter/height branch; current3 diagonal cases связывают
+retained9. Пересечения не суммируются. Author17 repair receipts/RED проверены отдельно;
+его21 до line wrapping AST-equivalent final, мои21 — на final bytes.
+
+### Live, delivery и непройденные границы
+
+Старый Q2 URL wait исторический: конкретный URL позже получен, но real media403
+не исправлен. Successful full live downloads0; limited extraction320 не доказывает
+отсутствия1080/1440/2160 у SOURCE. Retained real sidecars и local successful merges
+не подменяют видео. Sole Oracle завершён; missing EJS/Node setup не доказанная
+причина403. Component/player-JS form timed out unanswered = **NOT_GRANTED**:
+no install/update/config/code fetch, cookies/proxy/credentials/access bypass,
+повтор URL/permission ask. Reviewer сделал0 новых YouTube attempts.
+
+Bounded source8 разрешён к отдельной factual docs/selective source commit/push
+доставке тем же Reviewer с этими limits; acceptance/delivery/live completion —
+разные факты. Принятые product gates не повторяются ради docs/Git. Historical Q2
+ZIP SHA `de015c8758d81d9d131225a1749ea734218a0f94e34e38225356b3d2b7bee929`
+неизменен, **не содержит Q3** и не пересобирался/переиздавался. Native Trash UNKNOWN/
+recoverability/restore, GUI build/visual/manual, иные платформы/hosted CI,
+optional extras/legal redistribution/whole legacy privacy остаются вне scope.
+Normative PLAN/CONTRACT, imported PFK и исторический body выше сохранены.
+Technical outer release root42400/native0/raw0,7 signaled handles, watchdog=false,
+live residue=[]; source frozen, index был пуст. Delivery/remote CI записываются
+отдельно, не выводятся из этого local ACCEPTED.

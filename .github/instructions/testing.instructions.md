@@ -130,11 +130,37 @@ source исчез/history сохранена, recoverability/restore не про
 отдельно сохранил реальные recorded files. Не ретраить неизвестный эффект вслепую.
 
 Local fixture не YouTube/720p/remote sidecar proof. External gate —
-WAITING_FOR_USER_URL / NOT_RUN, без выбора sample/solver download. GUI build/visual,
+в Q2 был WAITING_FOR_USER_URL / NOT_RUN, без выбора sample/solver download; текущий
+Q3 media403 остаётся OPEN/BLOCKED по [download testing](../../docs/agent-instructions/03-download-testing.md).
+GUI build/visual,
 иные платформы/hosted CI/optional extras/whole legacy privacy/legal redistribution
 не квалифицированы. Уже принятые runtime gates не повторяются ради документации,
 Git или ZIP recontainer тех же payload bytes: проверяются affected final docs,
 полный ZIP member/SHA/CRC set и неизменность accepted source/artifact.
+
+## Q3: принятый source-only repair и reuse
+
+Весь8-file candidate02 независимо ACCEPTED_Q3_SOURCE_ONLY_LIVE_BLOCKED. Original
+strict R1/R2 controls native0 проверили clean JPEG GET1, preexisting JPEG/PNG GET0
+без adoption, actual identity/bytes/unlisted preservation и настоящий og:description
+до RU403: physical1/recorded1/media GET0, paired media403 physical4/recorded4.
+Exact sidecar paths планируются SDK filename helpers до effects, без fixed suffix
+списка/directory scan; ранний отказ не делает preexisting file принадлежащим попытке.
+Failure/persistence/readback и useful next writer проверены; failed остаётся failed.
+
+Свежие final-byte3 regressions/21 siblings, owner1 mypy, configured2 E/F/I/UP и
+narrow2 E/F/I — native0. Прежние336/103/mypy68/configured112/changed8/four-smokes и9
+synthetic quality/API/CLI/MCP proofs переиспользованы после byte/AST/input binding,
+не названы новым whole run. Current API1080/source CLI1440/FastMCP2160 проверил
+изменённый owner через SDK/FFmpeg/ffprobe/sidecars/reopen. Не суммировать пересечения.
+[Q3 verification](../../docs/command-first/VERIFICATION.md#q3-source-only-increment)
+сохраняет rejected candidate01/RED и конкретные hashes/release.
+
+Original real YouTube media403 OPEN/BLOCKED; local успех не доказывает remote fix
+или source absence high resolutions. Missing EJS/Node setup не доказанная причина;
+component/player-JS grant отсутствует, повтор/установка/config/code fetch/permission
+ask не разрешены. Source delivery проверяет только affected final docs/identity,
+без product suite/type/lint/smoke/build replay. Q2 ZIP/EXE не содержит Q3.
 
 ## Доказательства и завершение
 

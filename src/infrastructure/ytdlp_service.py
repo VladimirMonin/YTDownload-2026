@@ -26,6 +26,8 @@ logger = logging.getLogger(__name__)
 # Высота для каждого варианта качества
 _QUALITY_HEIGHT: dict[QualityOption, int | None] = {
     QualityOption.BEST: None,
+    QualityOption.P2160: 2160,
+    QualityOption.P1440: 1440,
     QualityOption.P1080: 1080,
     QualityOption.P720: 720,
     QualityOption.P480: 480,
@@ -44,12 +46,13 @@ def _build_format_string(task: DownloadTask) -> str:
         # Лучшее доступное видео + аудио
         return "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best"
 
-    # Видео до заданного разрешения + лучшее аудио
+    # Prefer the available height, not a lower MP4 over a higher WebM. FFmpeg
+    # still merges into MP4. Every fallback retains the cap; ? permits an unknown
+    # height (e.g. a generic direct file), never a known height above the request.
     return (
-        f"bestvideo[height<={height}][ext=mp4]+bestaudio[ext=m4a]"
+        f"bestvideo[height<={height}]+bestaudio[ext=m4a]"
         f"/bestvideo[height<={height}]+bestaudio"
-        f"/best[height<={height}]"
-        f"/best"
+        f"/best[height<=?{height}]"
     )
 
 
@@ -74,7 +77,21 @@ class _BackendLogger:
 
     def error(self, message: object) -> None:
         self.errors += 1
-        logger.error("ytdlp.message reason_code=DOWNLOAD_FAILED")
+        # SDK text may contain signed URLs, credentials, paths and video content.
+        # Extract only a bounded technical HTTP status; never format the message.
+        match = (
+            re.search(r"\bHTTP(?: Error)?\s*:?\s*([1-5]\d{2})\b", message, re.IGNORECASE)
+            if isinstance(message, str)
+            else None
+        )
+        if match:
+            status = int(match.group(1))
+            reason = {403: "HTTP_FORBIDDEN", 429: "HTTP_RATE_LIMITED"}.get(
+                status, "BACKEND_HTTP_ERROR"
+            )
+            logger.error("ytdlp.message reason_code=%s http_status=%d", reason, status)
+        else:
+            logger.error("ytdlp.message reason_code=DOWNLOAD_FAILED")
 
 
 class YtDlpService(IDownloadService):
@@ -155,7 +172,12 @@ class YtDlpService(IDownloadService):
             return DownloadOutcome("cancelled")
         import yt_dlp
         from yt_dlp.postprocessor.common import PostProcessor
-        from yt_dlp.utils import DownloadCancelled
+        from yt_dlp.utils import (
+            DownloadCancelled,
+            determine_ext,
+            replace_extension,
+            subtitles_filename,
+        )
 
         clean_url, is_playlist = parse_youtube_url(task.url)
         # A leased runtime allocates unique task IDs. Keep each task's checks, media
@@ -175,6 +197,23 @@ class YtDlpService(IDownloadService):
         preexisting: set[Path] = set()
         media: list[Path] = []
         last: dict[str, object] = {}
+        sidecar_failed = False
+        sidecar_plans: dict[Path, tuple[str, tuple[int, int, int, int] | None]] = {}
+
+        def identity(candidate: Path) -> tuple[int, int, int, int] | None:
+            try:
+                facts = candidate.stat()
+            except FileNotFoundError:
+                return None
+            return facts.st_dev, facts.st_ino, facts.st_size, facts.st_mtime_ns
+
+        def plan_sidecar(value: object, kind: str) -> None:
+            candidate = path(value)
+            if candidate is not None and candidate not in sidecar_plans:
+                before = identity(candidate)
+                sidecar_plans[candidate] = kind, before
+                if before is not None:
+                    preexisting.add(candidate)
 
         def abort() -> None:
             if self._cancel_event.is_set():
@@ -243,32 +282,82 @@ class YtDlpService(IDownloadService):
                 self.before_media = before_media
 
             def run(self, info: dict[str, Any]) -> tuple[list[object], dict[str, Any]]:
+                nonlocal sidecar_failed
                 abort()
                 filename = self._downloader.prepare_filename(info)
                 target = path(filename)
                 if target is not None:
-                    candidates = [
-                        target,
-                        target.with_suffix(".mp4"),
-                        target.with_suffix(".m4a"),
-                        target.with_suffix(".description"),
-                        target.with_suffix(".info.json"),
-                    ]
-                    candidates.extend(
-                        target.with_suffix(suffix) for suffix in (".jpg", ".png", ".webp")
-                    )
-                    languages = {task.subtitle_lang, *(info.get("requested_subtitles") or {})}
-                    candidates.extend(
-                        target.with_suffix(f".{lang}.{ext}")
-                        for lang in languages
-                        for ext in ("vtt", "srt", "ass")
-                    )
-                    for candidate in candidates[:3] if self.before_media else candidates:
+                    candidates = [target, target.with_suffix(".mp4"), target.with_suffix(".m4a")]
+                    if not self.before_media:
+                        # This owner supplies one template for all SDK output roles.
+                        # Use the SDK's own filename rules and disclosed ext/language,
+                        # not a guessed thumbnail/subtitle suffix list or directory scan.
+                        ext = info.get("ext")
+                        plan_sidecar(replace_extension(filename, "info.json", ext), "info_json")
+                        if task.save_description:
+                            plan_sidecar(
+                                replace_extension(filename, "description", ext), "description"
+                            )
+                        if task.save_subtitles:
+                            for lang, item in (info.get("requested_subtitles") or {}).items():
+                                if isinstance(item, dict) and item.get("ext"):
+                                    plan_sidecar(
+                                        subtitles_filename(filename, lang, item["ext"], ext),
+                                        "subtitles",
+                                    )
+                        if task.save_thumbnail:
+                            for item in info.get("thumbnails") or []:
+                                if isinstance(item, dict) and item.get("url"):
+                                    thumb_ext = item.get("ext") or determine_ext(item["url"], "jpg")
+                                    plan_sidecar(
+                                        replace_extension(filename, thumb_ext, ext), "thumbnail"
+                                    )
+                    for candidate in candidates:
                         if candidate.is_file():
                             preexisting.add(candidate)
                     # Existing main files have no attempt attribution; never overwrite/adopt them.
-                    if any(p.is_file() for p in candidates[:3]):
+                    if any(p.is_file() for p in candidates):
                         raise RuntimeError("Existing output is not attributable")
+                    if self.before_media:
+                        # SDK sidecars already exist at before_dl. Retain their
+                        # exact disclosed paths even if the media request fails.
+                        capture(info)
+                        if task.save_thumbnail and (
+                            info.get("thumbnail") or info.get("thumbnails")
+                        ):
+                            saved_thumbnail = any(
+                                (thumbnail_path := path(item.get("filepath"))) is not None
+                                and thumbnail_path not in preexisting and thumbnail_path.is_file()
+                                for item in info.get("thumbnails") or []
+                                if isinstance(item, dict)
+                            )
+                            if not saved_thumbnail:
+                                # yt-dlp can discard a failed thumbnail and continue
+                                # media without calling logger.error. Missing at the
+                                # source is different from a declared but unsaved one.
+                                sidecar_failed = True
+                                logger.warning(
+                                    "ytdlp.sidecar.failed id=%d kind=thumbnail "
+                                    "reason_code=ARTIFACT_MISSING", task.id,
+                                )
+                        for key, suffix, enabled in (
+                            ("info_json", ".info.json", True),
+                            ("description", ".description", task.save_description),
+                        ):
+                            sidecar = announce(target.with_suffix(suffix)) if enabled else None
+                            if sidecar is not None:
+                                last[key] = sidecar
+                        height = info.get("height")
+                        selected_height = height if type(height) is int and height > 0 else None
+                        cap = (
+                            _QUALITY_HEIGHT.get(task.quality)
+                            if task.download_type == DownloadType.VIDEO else None
+                        )
+                        logger.info(
+                            "ytdlp.format.selected id=%d requested_quality=%s "
+                            "max_height=%s selected_height=%s",
+                            task.id, task.quality.value, cap, selected_height,
+                        )
                 return [], info
 
         def progress_hook(data: dict) -> None:
@@ -365,6 +454,21 @@ class YtDlpService(IDownloadService):
             pass
         except Exception:
             failed = True
+        # pre_process runs before description/subtitle/thumbnail writes. A later
+        # failure may prevent before_dl and every media hook; retain only exact
+        # planned paths that were absent before effects and now have an identity.
+        for planned, (kind, before) in sidecar_plans.items():
+            if before is None and identity(planned) is not None:
+                candidate = announce(planned)
+                if candidate is not None:
+                    if kind == "subtitles":
+                        subs = last.get("subtitles")
+                        subtitles = list(subs) if isinstance(subs, list) else []
+                        if candidate not in subtitles:
+                            subtitles.append(candidate)
+                        last["subtitles"] = subtitles
+                    elif kind not in last:
+                        last[kind] = candidate
         known = tuple(
             sorted((p for p in announced if p not in preexisting and p.is_file()), key=str)
         )
@@ -372,7 +476,7 @@ class YtDlpService(IDownloadService):
         if primary is not None:
             last["audio" if task.download_type == DownloadType.AUDIO else "video"] = primary
         reporter = opts["logger"]
-        failed = failed or reporter.errors > 0
+        failed = failed or reporter.errors > 0 or sidecar_failed
         # An independent failure remains failed, even if a cancel request races it.
         status: Literal["completed", "cancelled", "failed"] = (
             "failed" if failed else "cancelled" if self._cancel_event.is_set() else "completed"

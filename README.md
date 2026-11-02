@@ -22,8 +22,16 @@ ACCEPTED_Q2_LOCAL_OFFLINE**: наша Windows x64 console onedir-сборка, r
 71 вызов плюс8 отдельных complementary commands; offline308/7 e2e deselected/0 skips,
 mypy0/68, configured Ruff0/109, changed6 E/F/I0 и четыре module smokes0.
 Числа пересекающихся проверок не складываются. Local video/audio proof не является
-YouTube-проверкой: внешняя загрузка ждёт конкретного разрешённого URL.
+YouTube-проверкой; на границе Q2 конкретного разрешённого URL ещё не было.
 Native Trash дал partial/UNKNOWN, не recoverable-success. GUI build/visual не выполнялись.
+
+**Q3 source-only независимо ACCEPTED_Q3_SOURCE_ONLY_LIVE_BLOCKED:** весь8-file
+инкремент общего core/CLI/MCP, включая1440p/2160p height caps и корректный учёт
+собственных sidecars при раннем отказе. Это не успешный ремонт YouTube: переданный
+позже URL получил media HTTP403, исходная real-download задача **OPEN/BLOCKED**.
+Missing EJS/Node setup не доказанная причина403; component/player-JS grant отсутствует,
+новые попытки/установки/config/code fetch не разрешены. Точные свежие проверки и
+qualified reuse — [Q3 verification](docs/command-first/VERIFICATION.md#q3-source-only-increment).
 
 ---
 
@@ -31,7 +39,7 @@ Native Trash дал partial/UNKNOWN, не recoverable-success. GUI build/visual 
 
 | Функция | Описание |
 |---------|----------|
-| 📥 Загрузка видео и плейлистов | Best / 1080p / 720p / 480p / Audio Only |
+| 📥 Загрузка видео и плейлистов | Source Q3: best / 2160p / 1440p / 1080p / 720p / 480p / 360p / audio; числовые значения — height caps |
 | 🎵 Audio Only | Извлечение аудиодорожки в .m4a через FFmpeg |
 | 📝 Субтитры | Скачивание .vtt/.srt (с выбором языка) |
 | 🖼️ Обложка | Сохранённая thumbnail, формат по факту |
@@ -52,6 +60,11 @@ Native Trash дал partial/UNKNOWN, не recoverable-success. GUI build/visual 
 и notices. Не переносите один EXE: полный принятый runtime —759 files/440588786 bytes.
 Python, uv и отдельный FFmpeg для этого проверенного пакета не нужны. Это локальная
 передача пакета, не подписанный installer или GitHub Release; GUI EXE в Q2 не собирался.
+
+**Это исторический Q2 ZIP/EXE, без Q3 source-изменений.** Он не пересобирался и не
+переиздавался. Новые1440p/2160p и sidecar repairs ниже относятся к принятому source,
+а не автоматически к этому пакету. ZIP SHA256:
+`de015c8758d81d9d131225a1749ea734218a0f94e34e38225356b3d2b7bee929`.
 
 Из папки распаковки в PowerShell:
 
@@ -83,7 +96,9 @@ Default downloads всё ещё идут в home/Downloads/YTDownloader; для 
 & $exe --json --data-dir $profile queue add '<USER_AUTHORIZED_URL>' --quality 720p --type video --subtitle-lang en --save-subtitles --save-description --save-thumbnail
 ```
 
-Без конкретного URL этот gate — **WAITING_FOR_USER_URL / NOT_RUN**. Local Q2 fixture
+В Q2 gate был **WAITING_FOR_USER_URL / NOT_RUN**. Позже URL был передан, но real
+media403 остаётся **OPEN/BLOCKED**: этот пример не разрешает повторять попытку или
+обходить отсутствующий component/player-JS grant. Local Q2 fixture
 дал MP4 MPEG-4+AAC и audio-only AAC/M4A, не MP3 и не доказательство720p/YouTube/
 доступности внешних sidecars. Standalone cancel возвращает OWNER_REQUIRED;
 для удаления используйте preview и matching token, предпочтительно явный keep-files.
@@ -202,11 +217,20 @@ cases проверяют standalone lifetime и useful tool effects. Детал�
 
 ```bash
 uv run --locked --no-sync python -m src.interfaces.cli --help
-uv run --locked --no-sync python -m src.interfaces.cli queue add <url> --quality 720p
+uv run --locked --no-sync python -m src.interfaces.cli queue add <USER_AUTHORIZED_URL> --quality 1440p --type video --subtitle-lang ru --save-subtitles --save-description --save-thumbnail
 uv run --locked --no-sync python -m src.interfaces.cli history list --format json
 uv run --locked --no-sync python -m src.interfaces.cli server http --host 127.0.0.1 --port 8765
 uv run --locked --no-sync python -m src.interfaces.cli server stdio
 ```
+
+Source Q3 принимает общие `best`, `2160p`, `1440p`, `1080p`, `720p`, `480p`, `360p`,
+`audio` через API/CLI/MCP; default остаётся720p. Числовое качество — верхняя граница
+высоты, не обещание exact output: возможны lower/unknown heights, фактические размеры
+смотрите в infoJSON/media. Known above-cap fallback не допускается; прежние best/audio
+semantics сохранены. Пример — синтаксис будущей отдельно разрешённой операции, не
+новый live grant. SDK-planned preexisting sidecars не присваиваются новой попытке;
+реально созданный description до subtitle403 остаётся в paths/history. Наличие
+sidecars само по себе не означает done. Эти source repairs не обновляют Q2 EXE.
 
 Standalone `queue add` flush-ит acceptance, затем ждёт реальный итог: exit0 —
 только done+persisted, failure/cancel/unsaved — exit1 со safe stderr error, без
